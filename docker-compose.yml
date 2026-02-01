@@ -1,0 +1,74 @@
+# version: "3.8"
+
+services:
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - mynetwork
+
+  backend:
+    build:
+      context: ./bcb-backend
+      dockerfile: Dockerfile.dev
+    container_name: springboot-app
+    depends_on:
+      - redis
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./bcb-backend/.env
+    volumes:
+      - ./bcb-backend:/app
+    environment:
+      - SPRING_DEVTOOLS_RESTART_ENABLED=true
+    command: ./mvnw spring-boot:run
+    networks:
+      - mynetwork
+    
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: ngrok
+    depends_on:
+      - backend
+    command: http backend:8080
+    environment:
+      - NGROK_AUTHTOKEN=
+    ports:
+      - "4040:4040"
+    networks:
+      - mynetwork
+
+  frontend:
+    build:
+      context: ./bcb-frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./bcb-frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    container_name: react-app
+    depends_on:
+      - backend
+    env_file:
+      - ./bcb-frontend/.env
+    stdin_open: true
+    tty: true
+    networks:
+      - mynetwork
+      
+networks:
+  mynetwork:
+    driver: bridge
+
+volumes:
+  redis-data:

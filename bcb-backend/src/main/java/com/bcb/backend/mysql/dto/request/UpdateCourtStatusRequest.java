@@ -1,0 +1,8 @@
+package com.bcb.backend.mysql.dto.request;
+
+import lombok.Data;
+
+@Data
+public class UpdateCourtStatusRequest {
+    private boolean isAvailable;
+}

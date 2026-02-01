@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+#nprogress .bar {
+    background: linear-gradient(
+        90deg,
+        #3b82f6 0%,
+        #22d3ee 50%,
+        #3b82f6 100%
+    ) !important;
+    height: 5px !important;
+    border-radius: 10px !important;
+    z-index: 9999 !important;
+    animation: gradientShift 2s ease infinite;
+    background-size: 200% 100%;
+}
+
+#nprogress .peg {
+    box-shadow: 
+        0 0 12px #22d3ee, 
+        0 0 6px #3b82f6, 
+        0 0 20px rgba(59, 130, 246, 0.5) !important;
+    transition: all 0.3s ease !important;
+    opacity: 0.9;
+}
+
+@keyframes gradientShift {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: 0 0;
+    }
+}
+
+@keyframes fadeSlideDown {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -15px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
