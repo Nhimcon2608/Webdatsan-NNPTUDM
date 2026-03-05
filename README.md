@@ -56,7 +56,7 @@ WebDatSan là một ứng dụng web hiện đại để quản lý sân cầu l
 ### 1. Clone repository
 
 ```bash
-git clone https://github.com/Nhimcon2608/Webdatsan.git
+git clone https://github.com/Nhimcon2608/Webdatsan-NNPTUDM.git
 cd Webdatsan
 ```
 
