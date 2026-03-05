@@ -1,0 +1,130 @@
+# Backend RESTful scaffold (Node.js)
+
+## Stack de xuat phu hop frontend hien tai
+- Runtime: Node.js 20+ LTS
+- Framework: Express.js
+- Validation: Zod
+- Upload: Multer
+- Security/Middleware: Helmet, CORS, Morgan
+- CSDL khuyen nghi cho bai toan dat san: PostgreSQL
+
+Ly do chon PostgreSQL: he thong co nhieu quan he (tai khoan -> chi nhanh -> san -> lich dat -> hoa don/voucher), can query theo ngay/khoang thoi gian/trang thai va bao cao, phu hop mo hinh quan he.
+
+Luu y: scaffold hien tai dang dung in-memory store de frontend goi API ngay. Ban co the thay `utils/store.js` bang tang repository ket noi PostgreSQL (Prisma/Sequelize) ma khong doi URL API.
+
+## Cau truc bat buoc da tao
+- `bin/`
+- `controllers/`
+- `routes/`
+- `schemas/`
+- `utils/`
+- `app.js`
+- `package.json`
+
+## Chay backend
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+## API groups da map theo frontend services
+
+### Auth / Account
+- `POST /auth/login`
+- `POST /auth/register`
+- `POST /auth/logout`
+- `PATCH /accounts/change-password`
+- `GET /accounts/me`
+- `PUT /accounts/me/phone`
+- `PUT /accounts/upload-image`
+
+### Branch / Court / Price
+- `GET /branches/is-cooperated/:isCooperated`
+- `GET /branches/:branchId`
+- `GET /branches/request/:requestId`
+- `PUT /branches/:branchId/status`
+- `POST /branches`
+- `GET /branches/manager/:accountId`
+- `PUT /branches/:branchId/update`
+- `GET /badminton-courts/branch/:branchId/:status`
+- `GET /badminton-courts/branch/:branchId`
+- `GET /badminton-courts/manager/:accountId`
+- `PATCH /badminton-courts/:courtId/toggle`
+- `POST /badminton-courts`
+- `POST /badminton-courts-images`
+- `DELETE /badminton-courts-images/:badmintonCourtId/images/:imageId`
+- `GET /prices`
+- `GET /prices/:id`
+- `GET /prices/branch/:branchId`
+- `GET /prices/branch/:branchId/all-types`
+- `GET /prices/branch/:branchId/price-type/:priceTypeId`
+- `POST /prices`
+- `PUT /prices/:id`
+- `DELETE /prices/:id`
+- `GET /price-types`
+- `GET /price-types/:id`
+- `POST /price-types`
+- `DELETE /price-types/:id`
+
+### Reservation / Payment / Voucher / Review
+- `GET /reservations`
+- `GET /reservations/branch/:branchId/:date`
+- `GET /reservations/branch/:branchId?from=...&to=...`
+- `GET /reservations/:reservationId`
+- `GET /reservations/user/:status`
+- `POST /reservations`
+- `PUT /reservations/cancel/:reservationId`
+- `PUT /reservations/:reservationId`
+- `PATCH /reservations/schedule-cancel/:reservationId`
+- `PATCH /reservations/schedule-cancel`
+- `GET /reservations/branch/:branchId/all`
+- `GET /reservations/latest`
+- `PUT /reservations/:reservationId/status`
+- `GET /reservations/notification/:reservationId`
+- `POST /reservation-details`
+- `GET /reservation-details/court/:courtId/today`
+- `POST /fixed-booking`
+- `PATCH /fixed-booking`
+- `POST /payments`
+- `GET /payments/branch/:branchId`
+- `PUT /payments/:invoiceId/status`
+- `POST /payment/momo/create`
+- `GET /payment/momo/resIds-of/:orderId`
+- `GET /vouchers/branch/:branchId`
+- `POST /vouchers`
+- `PUT /vouchers/:voucherId`
+- `PATCH /vouchers/enable?voucherId=...&status=...`
+- `GET /reviews/branch/:branchId`
+- `GET /reviews/user`
+- `POST /reviews`
+- `PUT /reviews/:id`
+
+### Other endpoints
+- `GET /owners`
+- `GET /owners/phone/:phoneNumber`
+- `GET /players/account/:accountId`
+- `PUT /players`
+- `POST /partnershiprequests`
+- `GET /partnershiprequests`
+- `PATCH /partnershiprequests/:requestId/status`
+- `GET /temporary-recruitments`
+- `GET /temporary-recruitments/:id`
+- `GET /temporary-recruitments/full-infor/:id`
+- `GET /temporary-recruitments/by-reservation/:id`
+- `POST /temporary-recruitments`
+- `PATCH /temporary-recruitments/:id`
+- `PUT /temporary-recruitments/:id`
+- `GET /temporary-recruitments-saved`
+- `POST /temporary-recruitments-saved`
+- `DELETE /temporary-recruitments-saved/:temporaryRecruitmentId`
+- `GET /temporary-registrations`
+- `POST /temporary-registrations`
+
+## VS Code extensions nen cai
+- ESLint
+- Prettier - Code formatter
+- REST Client (hoac Thunder Client)
+- DotENV
+- Error Lens
+- Prisma (neu ban dung PostgreSQL + Prisma)
