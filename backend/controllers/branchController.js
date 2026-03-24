@@ -39,29 +39,28 @@ function serializeBranches(branches, context) {
   });
 }
 
-export async function getBranchesByCooperated(req, res) {
-  const { isCooperated } = req.params;
-  const branches = await list("branches");
-  const filteredBranches =
-    String(isCooperated).toLowerCase() === "all"
-      ? branches
-      : branches.filter((item) => item.isCooperated === toBoolean(isCooperated));
+export async function getBranches(req, res) {
+  const { isCooperated, partnershipRequestId, managerAccountId } = req.query;
+  let branches = await list("branches");
+
+  if (isCooperated !== undefined && String(isCooperated).toLowerCase() !== "all") {
+    branches = branches.filter((item) => item.isCooperated === toBoolean(isCooperated));
+  }
+
+  if (partnershipRequestId) {
+    branches = branches.filter((item) => item.partnershipRequestId === partnershipRequestId);
+  }
+
+  if (managerAccountId) {
+    branches = branches.filter((item) => item.managerAccountId === managerAccountId);
+  }
+
   const context = await loadBranchContext();
-  return ok(res, serializeBranches(filteredBranches, context));
+  return ok(res, serializeBranches(branches, context));
 }
 
 export async function getBranchById(req, res) {
   const branch = await findById("branches", req.params.branchId);
-  if (!branch) {
-    return res.status(404).json({ success: false, message: "Branch not found" });
-  }
-  const context = await loadBranchContext();
-  return ok(res, serializeBranches([branch], context)[0]);
-}
-
-export async function getBranchByPartnershipRequest(req, res) {
-  const { requestId } = req.params;
-  const branch = (await list("branches")).find((item) => item.partnershipRequestId === requestId);
   if (!branch) {
     return res.status(404).json({ success: false, message: "Branch not found" });
   }
@@ -82,31 +81,6 @@ export async function createBranch(req, res) {
   return created(res, serializeBranches([createdBranch], context)[0], "Branch created");
 }
 
-export async function updateBranchStatus(req, res) {
-  const { branchId } = req.params;
-  const isCooperated = req.body?.isCooperated ?? req.body?.cooperated ?? req.body;
-  const updated = await updateById("branches", branchId, {
-    isCooperated: toBoolean(isCooperated),
-  });
-
-  if (!updated) {
-    return res.status(404).json({ success: false, message: "Branch not found" });
-  }
-
-  const context = await loadBranchContext();
-  return ok(res, serializeBranches([updated], context)[0], "Branch cooperation updated");
-}
-
-export async function getBranchByManager(req, res) {
-  const { accountId } = req.params;
-  const branch = (await list("branches")).find((item) => item.managerAccountId === accountId);
-  if (!branch) {
-    return res.status(404).json({ success: false, message: "Branch not found" });
-  }
-  const context = await loadBranchContext();
-  return ok(res, serializeBranches([branch], context)[0]);
-}
-
 export async function updateBranch(req, res) {
   const { branchId } = req.params;
   const existing = await findById("branches", branchId);
@@ -114,7 +88,18 @@ export async function updateBranch(req, res) {
     return res.status(404).json({ success: false, message: "Branch not found" });
   }
 
-  const updated = await updateById("branches", branchId, req.body || {});
+  const payload = { ...(req.body || {}) };
+  if (payload.isCooperated !== undefined || payload.cooperated !== undefined) {
+    payload.isCooperated = toBoolean(payload.isCooperated ?? payload.cooperated);
+    delete payload.cooperated;
+  }
+
+  const updated = await updateById("branches", branchId, payload);
+
+  if (!updated) {
+    return res.status(404).json({ success: false, message: "Branch not found" });
+  }
+
   const context = await loadBranchContext();
   return ok(res, serializeBranches([updated], context)[0], "Branch updated");
 }

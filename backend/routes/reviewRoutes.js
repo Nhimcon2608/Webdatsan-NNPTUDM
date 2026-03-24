@@ -2,16 +2,14 @@ import { Router } from "../utils/router.js";
 
 import {
   createReview,
-  getReviewsByBranch,
-  getReviewsByUser,
+  getReviews,
   updateReview,
 } from "../controllers/reviewController.js";
 
 const router = Router();
 
-router.get("/branch/:branchId", getReviewsByBranch);
-router.get("/user", getReviewsByUser);
+router.get("/", getReviews);
 router.post("/", createReview);
-router.put("/:id", updateReview);
+router.patch("/:id", updateReview);
 
 export default router;

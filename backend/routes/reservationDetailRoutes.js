@@ -2,12 +2,12 @@ import { Router } from "../utils/router.js";
 
 import {
   createReservationDetail,
-  getTodaySlotsByCourt,
+  getReservationDetails,
 } from "../controllers/reservationDetailController.js";
 
 const router = Router();
 
+router.get("/", getReservationDetails);
 router.post("/", createReservationDetail);
-router.get("/court/:courtId/today", getTodaySlotsByCourt);
 
 export default router;

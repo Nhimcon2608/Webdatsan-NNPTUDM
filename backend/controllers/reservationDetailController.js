@@ -14,9 +14,15 @@ export async function createReservationDetail(req, res) {
   );
 }
 
-export async function getTodaySlotsByCourt(req, res) {
-  const { courtId } = req.params;
-  const today = new Date().toISOString().slice(0, 10);
+export async function getReservationDetails(req, res) {
+  const { courtId, date } = req.query;
+  const targetDate =
+    !date || date === "today" ? new Date().toISOString().slice(0, 10) : String(date).slice(0, 10);
+
+  if (!courtId) {
+    return ok(res, await list("reservationDetails"));
+  }
+
   const [rows, reservations, accounts, players] = await Promise.all([
     list("reservationDetails"),
     list("reservations"),
@@ -30,7 +36,7 @@ export async function getTodaySlotsByCourt(req, res) {
   const todayRows = rows.filter((item) => {
     const targetCourtId = item.courtId || item.badmintonCourtId;
     const slotDate = item.slotDate || reservationMap.get(item.reservationId)?.bookDate;
-    return targetCourtId === courtId && String(slotDate).slice(0, 10) === today;
+    return targetCourtId === courtId && String(slotDate).slice(0, 10) === targetDate;
   });
 
   const serializedRows = todayRows.map((item) => {

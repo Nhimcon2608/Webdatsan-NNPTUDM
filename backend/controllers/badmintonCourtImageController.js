@@ -1,6 +1,10 @@
 import { created, ok } from "../utils/response.js";
 import { list, updateById } from "../utils/store.js";
 
+function getUploadedFile(req) {
+  return req.file || req.files?.[0] || null;
+}
+
 export async function uploadCourtImage(req, res) {
   const badmintonCourtId = req.body?.badmintonCourtId || req.body?.courtId;
 
@@ -13,11 +17,12 @@ export async function uploadCourtImage(req, res) {
     return res.status(404).json({ success: false, message: "Court not found" });
   }
 
+  const file = getUploadedFile(req);
   const image = {
     id: `img-${Date.now()}`,
-    name: req.file?.originalname || req.body?.imageName || "court-image",
-    url: req.file?.originalname
-      ? `/uploads/courts/${badmintonCourtId}/${req.file.originalname}`
+    name: file?.originalname || req.body?.imageName || "court-image",
+    url: file?.originalname
+      ? `/uploads/courts/${badmintonCourtId}/${file.originalname}`
       : req.body?.url || "",
   };
 

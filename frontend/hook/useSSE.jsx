@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
+import { apiBaseUrl } from "../src/services/api";
 
 export default function useSSE(userId) {
     const sourceRef = useRef(null);
@@ -8,7 +9,7 @@ export default function useSSE(userId) {
         if (!userId) return;
 
         const source = new EventSource(
-            `${import.meta.env.VITE_API_URL}/sse/subscribe/${userId}`
+            `${apiBaseUrl}/event-streams/notifications?userId=${encodeURIComponent(userId)}`
         );
         sourceRef.current = source;
 

@@ -9,7 +9,7 @@ const partnershipRequestService = {
 
 	postPartnershipRequest: async (formData) => {
 		try {
-			const respone = await apiClient.post('/partnershiprequests', formData);
+			const respone = await apiClient.post('/partnership-requests', formData);
 			return normalizePartnershipRequest(unwrapApiData(respone));
 		} catch (error) {
 			console.log(error);
@@ -20,7 +20,7 @@ const partnershipRequestService = {
 	getAllPartnershipRequest: async () => {
 
 		try {
-			const respone = await apiClient.get('/partnershiprequests');
+			const respone = await apiClient.get('/partnership-requests');
 			return normalizePartnershipRequestList(unwrapApiData(respone));
 		} catch (error) {
 			console.log(error);
@@ -31,7 +31,7 @@ const partnershipRequestService = {
 
 	updateStatus: async (requestId, status) => {
 		try {
-			const respone = await apiClient.patch(`/partnershiprequests/${requestId}/status`, status);
+			const respone = await apiClient.patch(`/partnership-requests/${requestId}`, status);
 			return normalizePartnershipRequest(unwrapApiData(respone));
 		} catch (error) {
 			console.log(error);

@@ -4,6 +4,6 @@ import { subscribe } from "../controllers/sseController.js";
 
 const router = Router();
 
-router.get("/subscribe/:userId", subscribe);
+router.get("/notifications", subscribe);
 
 export default router;

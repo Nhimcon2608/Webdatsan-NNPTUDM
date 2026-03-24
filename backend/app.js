@@ -30,7 +30,6 @@ app.use(attachRequestContext);
 app.get("/health", healthHandler);
 app.get("/api/health", healthHandler);
 app.use("/api", routes);
-app.use(routes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

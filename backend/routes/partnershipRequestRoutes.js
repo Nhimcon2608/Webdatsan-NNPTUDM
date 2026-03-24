@@ -10,6 +10,6 @@ const router = Router();
 
 router.post("/", createPartnershipRequest);
 router.get("/", getAllPartnershipRequests);
-router.patch("/:requestId/status", updatePartnershipRequestStatus);
+router.patch("/:requestId", updatePartnershipRequestStatus);
 
 export default router;

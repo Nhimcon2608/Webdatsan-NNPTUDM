@@ -1,8 +1,19 @@
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, removeById, updateById } from "../utils/store.js";
 
-export async function getAllPrices(_req, res) {
-  return ok(res, await list("prices"));
+export async function getAllPrices(req, res) {
+  const { branchId, priceTypeId } = req.query;
+  let rows = await list("prices");
+
+  if (branchId) {
+    rows = rows.filter((item) => item.branchId === branchId);
+  }
+
+  if (priceTypeId) {
+    rows = rows.filter((item) => item.priceTypeId === priceTypeId);
+  }
+
+  return ok(res, rows);
 }
 
 export async function getPriceById(req, res) {

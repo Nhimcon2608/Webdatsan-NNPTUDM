@@ -3,24 +3,24 @@ import { normalizeAccount, unwrapApiData } from "./normalizers";
 
 const authService = {
     login: (loginData) => {
-        return apiClient.post("/auth/login", loginData);
+        return apiClient.post("/sessions", loginData);
     },
 
     changePassword: (formData) => {
-        return apiClient.patch("/accounts/change-password", formData);
+        return apiClient.patch("/accounts/current/password", formData);
     },
 
     register: (registerData) => {
-        return apiClient.post("/auth/register", registerData);
+        return apiClient.post("/accounts", registerData);
     },
 
     logout: () => {
-        return apiClient.post("/auth/logout");
+        return apiClient.delete("/sessions/current");
     },
 
     getCurrentAccount: async () => {
         try {
-            const response = await apiClient.get("/accounts/me");
+            const response = await apiClient.get("/accounts/current");
             return normalizeAccount(unwrapApiData(response));
         } catch (error) {
             console.error("Error fetching current account:", error);
@@ -30,8 +30,8 @@ const authService = {
 
     updatePhoneNumber: async (phoneNumber, token) => {
         try {
-            const response = await apiClient.put(
-                "/accounts/me/phone",
+            const response = await apiClient.patch(
+                "/accounts/current",
                 { phoneNumber },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

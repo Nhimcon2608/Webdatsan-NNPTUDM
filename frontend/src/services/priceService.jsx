@@ -32,7 +32,9 @@ const priceService = {
 	// Lấy bảng giá theo chi nhánh
 	getByBranchId: async (branchId) => {
 		try {
-			const response = await apiClient.get(`/prices/branch/${branchId}`);
+			const response = await apiClient.get(`/prices`, {
+				params: { branchId },
+			});
 			return normalizePriceList(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error fetching prices by branchId ${branchId}:`, error);
@@ -42,7 +44,9 @@ const priceService = {
 
 	getAllPriceTypesByBranch: async (branchId) => {
 		try {
-			const response = await apiClient.get(`/prices/branch/${branchId}/all-types`);
+			const response = await apiClient.get(`/price-types`, {
+				params: { branchId, include: "prices" },
+			});
 			return groupPricesByType(response);
 		} catch (error) {
 			console.error(`Error fetching all price types by branchId ${branchId}:`, error);
@@ -52,8 +56,9 @@ const priceService = {
 
 	getByBranchAndPriceType: async (branchId, priceTypeId) => {
 		try {
-			const token = localStorage.getItem("accessToken");
-			const response = await apiClient.get(`/prices/branch/${branchId}/price-type/${priceTypeId}`);
+			const response = await apiClient.get(`/prices`, {
+				params: { branchId, priceTypeId },
+			});
 			return normalizePriceList(unwrapApiData(response));
 		} catch (error) {
 			console.error(
@@ -80,7 +85,7 @@ const priceService = {
 	// Cập nhật bảng giá
 	update: async (id, data) => {
 		try {
-			const response = await apiClient.put(`/prices/${id}`, data);
+			const response = await apiClient.patch(`/prices/${id}`, data);
 			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error updating price with id ${id}:`, error);

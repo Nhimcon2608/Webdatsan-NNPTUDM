@@ -18,12 +18,10 @@ const reservationDetailService = {
     },
     getTodaySlotsByCourt: async (courtId, token) => {
         try {
-            const response = await apiClient.get(
-                `/reservation-details/court/${courtId}/today`,
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
+            const response = await apiClient.get(`/reservation-details`, {
+                params: { courtId, date: "today" },
+                headers: { Authorization: `Bearer ${token}` },
+            });
             return (unwrapApiData(response) || []).map((detail, index) =>
                 normalizeReservationDetail(detail, index)
             );

@@ -9,7 +9,9 @@ const ownerService = {
 
     getOwnerByPhoneNumber: async (phoneNumber) => {
         try {
-            const response = await apiClient.get(`owners/phone/${phoneNumber}`);
+            const response = await apiClient.get('/owners', {
+                params: { phoneNumber },
+            });
             return normalizeOwner(unwrapApiData(response));
         } catch (error) {
             console.error('Error fetching owner by phone number:', error);

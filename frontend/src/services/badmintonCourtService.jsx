@@ -23,7 +23,11 @@ const badmintionCourtService = {
 
     getAllCourtsOfBranchByStatus: async (branchId, status) => {
         try {
-            const response = await apiClient.get(`/badminton-courts/branch/${branchId}`);
+            const params = { branchId };
+            if (status && String(status).toLowerCase() !== "all") {
+                params.status = status;
+            }
+            const response = await apiClient.get(`/badminton-courts`, { params });
             const courts = normalizeCourtList(unwrapApiData(response));
             return filterCourtsByStatus(courts, status);
         } catch (error) {
@@ -35,8 +39,9 @@ const badmintionCourtService = {
     getByBranchId: async (branchId, token) => {
         try {
             const response = await apiClient.get(
-                `/badminton-courts/branch/${branchId}`,
+                `/badminton-courts`,
                 {
+                    params: { branchId },
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
@@ -50,8 +55,9 @@ const badmintionCourtService = {
     getCourtsByManager: async (accountId, token) => {
         try {
             const response = await apiClient.get(
-                `/badminton-courts/manager/${accountId}`,
+                `/badminton-courts`,
                 {
+                    params: { managerAccountId: accountId },
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
@@ -67,7 +73,7 @@ const badmintionCourtService = {
     toggleCourtStatus: async (courtId, token) => {
         try {
             const response = await apiClient.patch(
-                `/badminton-courts/${courtId}/toggle`,
+                `/badminton-courts/${courtId}`,
                 {},
                 {
                     headers: { Authorization: `Bearer ${token}` },
@@ -94,7 +100,8 @@ const badmintionCourtService = {
 
     uploadImage: async (formData) => {
         try {
-            const response = await apiClient.post(`/badminton-courts-images`, formData, {
+            const courtId = formData.get("badmintonCourtId") || formData.get("courtId");
+            const response = await apiClient.post(`/badminton-courts/${courtId}/images`, formData, {
                 headers: {
                     "Content-Type": "multipart/form-data"
                 }
@@ -108,7 +115,7 @@ const badmintionCourtService = {
 
     deleteImage: async (badmintonCourtId, imageId) => {
         try {
-            const response = await apiClient.delete(`/badminton-courts-images/${badmintonCourtId}/images/${imageId}`)
+            const response = await apiClient.delete(`/badminton-courts/${badmintonCourtId}/images/${imageId}`)
             return unwrapApiData(response);
         } catch (error) {
             console.error('Error fetching delete image:', error);

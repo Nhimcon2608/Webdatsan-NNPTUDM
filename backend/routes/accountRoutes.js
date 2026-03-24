@@ -5,17 +5,19 @@ import {
   changePassword,
   getAllAccounts,
   getMe,
-  updatePhone,
+  updateAccount,
   uploadImage,
 } from "../controllers/accountController.js";
+import { register } from "../controllers/authController.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
 router.get("/", getAllAccounts);
-router.patch("/change-password", changePassword);
-router.get("/me", getMe);
-router.put("/me/phone", updatePhone);
-router.put("/upload-image", upload.any(), uploadImage);
+router.post("/", register);
+router.get("/current", getMe);
+router.patch("/current", updateAccount);
+router.patch("/current/password", changePassword);
+router.put("/current/avatar", upload.single("file"), uploadImage);
 
 export default router;

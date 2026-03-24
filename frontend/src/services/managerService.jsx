@@ -4,7 +4,7 @@ import { normalizeAccount, unwrapApiData } from "./normalizers";
 const managerService = {
 	uploadAvatar: async (formData) => {
 		try {
-			const response = await apiClient.put('/accounts/upload-image', formData, {
+			const response = await apiClient.put('/accounts/current/avatar', formData, {
 				headers: {
 					'Content-Type': 'multipart/form-data',
 				},

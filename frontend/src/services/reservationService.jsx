@@ -1,6 +1,27 @@
 import apiClient from "./api";
 import { normalizeReservation, normalizeReservationList, unwrapApiData } from "./normalizers";
 
+async function findFixedBookingIdByReservationIds(reservationIds) {
+	const firstReservationId = reservationIds?.[0];
+	if (!firstReservationId) {
+		throw new Error("Thiếu reservationIds để tìm fixed booking.");
+	}
+
+	const response = await apiClient.get("/fixed-bookings", {
+		params: { reservationId: firstReservationId },
+	});
+	const fixedBookings = unwrapApiData(response) || [];
+	const fixedBooking = fixedBookings.find((item) =>
+		reservationIds.every((id) => (item.reservationIds || []).includes(String(id)))
+	);
+
+	if (!fixedBooking?.id) {
+		throw new Error("Không tìm thấy fixed booking tương ứng.");
+	}
+
+	return fixedBooking.id;
+}
+
 const reservationService = {
 	getAllReservation: async () => {
 		try {
@@ -14,7 +35,9 @@ const reservationService = {
 
 	getUncanceledReservationOfBranchByDate: async (branchId, date) => {
 		try {
-			const response = await apiClient.get(`/reservations/branch/${branchId}/${date}`);
+			const response = await apiClient.get(`/reservations`, {
+				params: { branchId, date, excludeCancelled: true },
+			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -24,7 +47,9 @@ const reservationService = {
 
 	getUncanceledReservationOfBranchBetween: async (branchId, from, to) => {
 		try {
-			const response = await apiClient.get(`/reservations/branch/${branchId}?from=${from}&to=${to}`);
+			const response = await apiClient.get(`/reservations`, {
+				params: { branchId, from, to, excludeCancelled: true },
+			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -44,7 +69,9 @@ const reservationService = {
 
 	getAllReservationsOfUser: async (status) => {
 		try {
-			const response = await apiClient.get(`/reservations/user/${status}`);
+			const response = await apiClient.get(`/reservations`, {
+				params: { userScope: "current", status },
+			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -64,9 +91,9 @@ const reservationService = {
 
 	cancelReservation: async (reservationId) => {
 		try {
-			const response = await apiClient.put(
-				`/reservations/cancel/${reservationId}`
-			);
+			const response = await apiClient.patch(`/reservations/${reservationId}`, {
+				status: "CANCELLED",
+			});
 			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -76,7 +103,7 @@ const reservationService = {
 
 	updateReservation: async (reservationId, reservationData) => {
 		try {
-			const response = await apiClient.put(
+			const response = await apiClient.patch(
 				`/reservations/${reservationId}`,
 				reservationData
 			);
@@ -89,9 +116,9 @@ const reservationService = {
 
 	scheduleCancellation: async (reservationId) => {
 		try {
-			const response = await apiClient.patch(
-				`/reservations/schedule-cancel/${reservationId}`
-			);
+			const response = await apiClient.patch(`/reservations/${reservationId}`, {
+				status: "SCHEDULED_CANCEL",
+			});
 			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -101,7 +128,10 @@ const reservationService = {
 
 	scheduleCancellationListId: async (reservationIds) => {
 		try {
-			const response = await apiClient.patch(`/reservations/schedule-cancel`,reservationIds);
+			const response = await apiClient.post(`/reservation-status-updates`, {
+				reservationIds,
+				status: "SCHEDULED_CANCEL",
+			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -111,7 +141,9 @@ const reservationService = {
 
 	getRecentReservations: async (branchId) => {
 		try {
-			const response = await apiClient.get(`/reservations/branch/${branchId}`);
+			const response = await apiClient.get(`/reservations`, {
+				params: { branchId, excludeCancelled: true },
+			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching recent reservations:", error);
@@ -121,9 +153,9 @@ const reservationService = {
 
 	getAllReservationsByBranch: async (branchId) => {
 		try {
-			const response = await apiClient.get(
-				`/reservations/branch/${branchId}/all`
-			);
+			const response = await apiClient.get(`/reservations`, {
+				params: { branchId },
+			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching recent reservations:", error);
@@ -133,10 +165,12 @@ const reservationService = {
 
 	getAllReservationsByBookAtDesc: async (branchId) => {
 		try {
-			const url = branchId
-				? `/reservations/latest?branchId=${branchId}`
-				: `/reservations/latest`;
-			const response = await apiClient.get(url);
+			const response = await apiClient.get(`/reservations`, {
+				params: {
+					...(branchId ? { branchId } : {}),
+					sort: "-createdAt",
+				},
+			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching latest reservations:", error);
@@ -146,9 +180,9 @@ const reservationService = {
 
 	getTodayReservation: async (branchId, date) => {
 		try {
-			const response = await apiClient.get(
-				`/reservations/branch/${branchId}/${date}`
-			);
+			const response = await apiClient.get(`/reservations`, {
+				params: { branchId, date, excludeCancelled: true },
+			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations of today:", error);
@@ -157,8 +191,8 @@ const reservationService = {
 	},
 	updateReservationStatus: async (reservationId, status, token) => {
 		try {
-			const response = await apiClient.put(
-				`/reservations/${reservationId}/status`,
+			const response = await apiClient.patch(
+				`/reservations/${reservationId}`,
 				{ status },
 				{ headers: { Authorization: `Bearer ${token}` } }
 			);
@@ -172,7 +206,8 @@ const reservationService = {
 	},
 	getReservationsByBranch: async (branchId, token) => {
 		try {
-			const response = await apiClient.get(`/reservations/branch/${branchId}`, {
+			const response = await apiClient.get(`/reservations`, {
+				params: { branchId, excludeCancelled: true },
 				headers: { Authorization: `Bearer ${token}` },
 			});
 			return normalizeReservationList(unwrapApiData(response));
@@ -186,7 +221,7 @@ const reservationService = {
 
 	sendToManager: async (reservationId) => {
 		try {
-			const response = await apiClient.get(`/reservations/notification/${reservationId}`);
+			const response = await apiClient.post(`/reservations/${reservationId}/notifications`, {});
 			return unwrapApiData(response);
 		} catch (error) {
 			console.error("Error:", error);
@@ -196,8 +231,12 @@ const reservationService = {
 
 	createFixedBooking: async (fixedBookingRequest) => {
 		try {
-			const response = await apiClient.post("/fixed-booking", fixedBookingRequest);
-			return unwrapApiData(response);
+			const response = await apiClient.post("/fixed-bookings", fixedBookingRequest);
+			const data = unwrapApiData(response);
+			return {
+				...data,
+				reservations: data?.reservationIds || [],
+			};
 		} catch (error) {
 			console.error("Lỗi khi đặt sân cố định:", error);
 			const msg = error.response?.data?.message || error.message || "Đã có lỗi xảy ra";
@@ -208,10 +247,9 @@ const reservationService = {
 	// ===== THAY ĐỔI TRẠNG THÁI ĐẶT CỐ ĐỊNH (HÀNG LOẠT) =====
 	updateFixedBookingStatus: async (reservationIds, status) => {
 		try {
-			// Gửi cả danh sách 4 ID và status lên
-			const response = await apiClient.patch("/fixed-booking", {
-				reservationIds: reservationIds,
-				status: status.toLowerCase()
+			const fixedBookingId = await findFixedBookingIdByReservationIds(reservationIds);
+			const response = await apiClient.patch(`/fixed-bookings/${fixedBookingId}`, {
+				status: status.toLowerCase(),
 			});
 			return unwrapApiData(response);
 		} catch (error) {
@@ -225,11 +263,7 @@ const reservationService = {
 	// ===== ĐẶT CỐ ĐỊNH: XÁC NHẬN THANH TOÁN =====
 	confirmFixedBookingPayment: async (reservationIds) => {
 		try {
-			const response = await apiClient.patch("/fixed-booking", {
-				reservationIds: reservationIds,
-				status: "WAITING"
-			});
-			return response.data;
+			return await reservationService.updateFixedBookingStatus(reservationIds, "WAITING");
 		} catch (error) {
 			console.error("Lỗi xác nhận thanh toán cố định:", error);
 			throw new Error(error.response?.data?.message || "Xác nhận thanh toán thất bại");
@@ -239,11 +273,10 @@ const reservationService = {
 	// ===== ĐẶT CỐ ĐỊNH: HỦY ĐẶT SÂN =====
 	cancelFixedBooking: async (reservationIds) => {
 		try {
-			const response = await apiClient.patch("/fixed-booking", {
-				reservationIds: reservationIds.map(id => String(id)),
-				status: "CANCELLED"
-			});
-			return response.data;
+			return await reservationService.updateFixedBookingStatus(
+				reservationIds.map(id => String(id)),
+				"CANCELLED"
+			);
 		} catch (error) {
 			console.error("Lỗi hủy đặt cố định:", error);
 			throw new Error(error.response?.data?.message || "Hủy đặt sân thất bại");
