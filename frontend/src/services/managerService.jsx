@@ -1,4 +1,5 @@
 import apiClient from "./api";
+import { normalizeAccount, unwrapApiData } from "./normalizers";
 
 const managerService = {
 	uploadAvatar: async (formData) => {
@@ -8,7 +9,7 @@ const managerService = {
 					'Content-Type': 'multipart/form-data',
 				},
 			});
-			return response.data;
+			return normalizeAccount(unwrapApiData(response));
 		} catch (error) {
 			console.error('Error uploading avatar:', error);
 			throw new Error(error.response?.data?.message || 'Failed to upload avatar');

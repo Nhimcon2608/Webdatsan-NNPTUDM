@@ -1,4 +1,9 @@
 import apiClient from "./api";
+import {
+	normalizePayment,
+	normalizePaymentList,
+	unwrapApiData,
+} from "./normalizers";
 
 const invoiceService = {
 	// Tạo hóa đơn mới
@@ -11,7 +16,7 @@ const invoiceService = {
 					headers: { Authorization: `Bearer ${token}` },
 				}
 			);
-			return response.data;
+			return normalizePayment(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error creating invoice:", error);
 			throw new Error(error.response?.data?.message || "Tạo hóa đơn thất bại.");
@@ -24,7 +29,7 @@ const invoiceService = {
 			const response = await apiClient.get(`/payments/branch/${branchId}`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			return response.data;
+			return normalizePaymentList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching invoices:", error);
 			throw new Error(
@@ -46,11 +51,28 @@ const invoiceService = {
 					},
 				}
 			);
-			return response.data;
+			return normalizePayment(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error updating payment status:", error);
 			throw new Error(
 				error.response?.data?.message || "Cập nhật trạng thái thanh toán thất bại!"
+			);
+		}
+	},
+
+	getInvoiceByReservationId: async (reservationId, token) => {
+		try {
+			const response = await apiClient.get(`/payments/reservation/${reservationId}`, {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			return normalizePayment(unwrapApiData(response));
+		} catch (error) {
+			if (error.response?.status === 404) {
+				return null;
+			}
+			console.error("Error fetching invoice by reservation:", error);
+			throw new Error(
+				error.response?.data?.message || "Không thể lấy hóa đơn theo lịch đặt."
 			);
 		}
 	},

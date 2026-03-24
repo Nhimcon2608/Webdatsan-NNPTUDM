@@ -1,10 +1,16 @@
 import apiClient from './api';
+import {
+    normalizeOwner,
+    normalizeOwnerList,
+    unwrapApiData,
+} from './normalizers';
 
 const ownerService = {
 
     getOwnerByPhoneNumber: async (phoneNumber) => {
         try {
-            return await apiClient.get(`owners/phone/${phoneNumber}`);
+            const response = await apiClient.get(`owners/phone/${phoneNumber}`);
+            return normalizeOwner(unwrapApiData(response));
         } catch (error) {
             console.error('Error fetching owner by phone number:', error);
             throw error;
@@ -14,7 +20,7 @@ const ownerService = {
     getAllOwner: async () => {
         try {
             const response = await apiClient.get('/owners');
-            return response.data;
+            return normalizeOwnerList(unwrapApiData(response));
         } catch (error) {
             console.error('Error fetching owners: ', error);
             throw error;

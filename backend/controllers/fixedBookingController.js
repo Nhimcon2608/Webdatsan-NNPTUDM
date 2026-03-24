@@ -1,13 +1,13 @@
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 
-export function createFixedBooking(req, res) {
+export async function createFixedBooking(req, res) {
   const payload = req.body || {};
   const repeatCount = Number(payload.repeatCount || 4);
 
   const createdReservationIds = [];
   for (let i = 0; i < repeatCount; i += 1) {
-    const reservation = insert("reservations", {
+    const reservation = await insert("reservations", {
       ...payload,
       status: payload.status || "PENDING",
       isFixedBooking: true,
@@ -18,7 +18,7 @@ export function createFixedBooking(req, res) {
     createdReservationIds.push(reservation.id);
   }
 
-  const fixedBooking = insert("fixedBookings", {
+  const fixedBooking = await insert("fixedBookings", {
     reservationIds: createdReservationIds,
     status: "PENDING",
   });
@@ -33,21 +33,23 @@ export function createFixedBooking(req, res) {
   );
 }
 
-export function updateFixedBookingStatus(req, res) {
+export async function updateFixedBookingStatus(req, res) {
   const reservationIds = req.body?.reservationIds || [];
   const status = String(req.body?.status || "PENDING").toUpperCase();
 
-  const updatedReservations = reservationIds
-    .map((id) => updateById("reservations", String(id), { status }))
-    .filter(Boolean);
+  const updatedReservations = (
+    await Promise.all(
+      reservationIds.map((id) => updateById("reservations", String(id), { status })),
+    )
+  ).filter(Boolean);
 
-  const fixedBooking = list("fixedBookings").find((item) => {
+  const fixedBooking = (await list("fixedBookings")).find((item) => {
     const ids = item.reservationIds || [];
     return reservationIds.every((id) => ids.includes(String(id)));
   });
 
   const updatedFixedBooking = fixedBooking
-    ? updateById("fixedBookings", fixedBooking.id, { status })
+    ? await updateById("fixedBookings", fixedBooking.id, { status })
     : null;
 
   return ok(

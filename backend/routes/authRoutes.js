@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from "../utils/router.js";
 
 import { login, logout, register } from "../controllers/authController.js";
 

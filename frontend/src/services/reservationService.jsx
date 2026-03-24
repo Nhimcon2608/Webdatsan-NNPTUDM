@@ -1,10 +1,11 @@
 import apiClient from "./api";
+import { normalizeReservation, normalizeReservationList, unwrapApiData } from "./normalizers";
 
 const reservationService = {
 	getAllReservation: async () => {
 		try {
 			const response = await apiClient.get(`/reservations`);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -14,7 +15,7 @@ const reservationService = {
 	getUncanceledReservationOfBranchByDate: async (branchId, date) => {
 		try {
 			const response = await apiClient.get(`/reservations/branch/${branchId}/${date}`);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -24,7 +25,7 @@ const reservationService = {
 	getUncanceledReservationOfBranchBetween: async (branchId, from, to) => {
 		try {
 			const response = await apiClient.get(`/reservations/branch/${branchId}?from=${from}&to=${to}`);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -34,7 +35,7 @@ const reservationService = {
 	getReservationById: async (reservationId) => {
 		try {
 			const response = await apiClient.get(`/reservations/${reservationId}`);
-			return response.data;
+			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -44,7 +45,7 @@ const reservationService = {
 	getAllReservationsOfUser: async (status) => {
 		try {
 			const response = await apiClient.get(`/reservations/user/${status}`);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -54,7 +55,7 @@ const reservationService = {
 	postReservation: async (formData) => {
 		try {
 			const response = await apiClient.post("/reservations", formData);
-			return response.data;
+			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -66,7 +67,7 @@ const reservationService = {
 			const response = await apiClient.put(
 				`/reservations/cancel/${reservationId}`
 			);
-			return response.data;
+			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -79,7 +80,7 @@ const reservationService = {
 				`/reservations/${reservationId}`,
 				reservationData
 			);
-			return response.data;
+			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -91,7 +92,7 @@ const reservationService = {
 			const response = await apiClient.patch(
 				`/reservations/schedule-cancel/${reservationId}`
 			);
-			return response.data;
+			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -101,7 +102,7 @@ const reservationService = {
 	scheduleCancellationListId: async (reservationIds) => {
 		try {
 			const response = await apiClient.patch(`/reservations/schedule-cancel`,reservationIds);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw error;
@@ -111,7 +112,7 @@ const reservationService = {
 	getRecentReservations: async (branchId) => {
 		try {
 			const response = await apiClient.get(`/reservations/branch/${branchId}`);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching recent reservations:", error);
 			throw error;
@@ -123,7 +124,7 @@ const reservationService = {
 			const response = await apiClient.get(
 				`/reservations/branch/${branchId}/all`
 			);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching recent reservations:", error);
 			throw error;
@@ -136,7 +137,7 @@ const reservationService = {
 				? `/reservations/latest?branchId=${branchId}`
 				: `/reservations/latest`;
 			const response = await apiClient.get(url);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching latest reservations:", error);
 			throw error;
@@ -148,7 +149,7 @@ const reservationService = {
 			const response = await apiClient.get(
 				`/reservations/branch/${branchId}/${date}`
 			);
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations of today:", error);
 			throw error;
@@ -161,7 +162,7 @@ const reservationService = {
 				{ status },
 				{ headers: { Authorization: `Bearer ${token}` } }
 			);
-			return response.data;
+			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error updating reservation status:", error);
 			throw new Error(
@@ -174,7 +175,7 @@ const reservationService = {
 			const response = await apiClient.get(`/reservations/branch/${branchId}`, {
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			return response.data;
+			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
 			throw new Error(
@@ -186,7 +187,7 @@ const reservationService = {
 	sendToManager: async (reservationId) => {
 		try {
 			const response = await apiClient.get(`/reservations/notification/${reservationId}`);
-			return response.data;
+			return unwrapApiData(response);
 		} catch (error) {
 			console.error("Error:", error);
 			throw error;
@@ -196,7 +197,7 @@ const reservationService = {
 	createFixedBooking: async (fixedBookingRequest) => {
 		try {
 			const response = await apiClient.post("/fixed-booking", fixedBookingRequest);
-			return response.data; // Trả về mảng reservation IDs
+			return unwrapApiData(response);
 		} catch (error) {
 			console.error("Lỗi khi đặt sân cố định:", error);
 			const msg = error.response?.data?.message || error.message || "Đã có lỗi xảy ra";
@@ -212,7 +213,7 @@ const reservationService = {
 				reservationIds: reservationIds,
 				status: status.toLowerCase()
 			});
-			return response.data;
+			return unwrapApiData(response);
 		} catch (error) {
 			console.error("Lỗi cập nhật trạng thái đặt cố định:", error);
 			const msg = error.response?.data?.message || error.response?.data || "Cập nhật trạng thái thất bại";

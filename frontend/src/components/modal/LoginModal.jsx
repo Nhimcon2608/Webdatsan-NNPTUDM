@@ -102,9 +102,9 @@ const LoginModal = ({
     showHeader = true
 }) => {
     const [activeTab, setActiveTab] = useState(defaultTab);
-    const [loginData, setLoginData] = useState({ username: '', password: '' });
+    const [loginData, setLoginData] = useState({ email: '', password: '' });
     const [registerData, setRegisterData] = useState({
-        username: '',
+        email: '',
         password: '',
         phoneNumber: '',
         confirmPassword: ''
@@ -139,14 +139,14 @@ const LoginModal = ({
 
     const validateLoginForm = () => {
         const errors = {};
-        if (!loginData.username.trim()) errors.username = "Tên đăng nhập là bắt buộc";
+        if (!loginData.email.trim()) errors.email = "Email là bắt buộc";
         if (!loginData.password.trim()) errors.password = "Mật khẩu là bắt buộc";
         return errors;
     };
 
     const validateRegisterForm = () => {
         const errors = {};
-        if (!registerData.username.trim()) errors.username = "Tên đăng nhập là bắt buộc";
+        if (!registerData.email.trim()) errors.email = "Email là bắt buộc";
         if (!registerData.password.trim()) errors.password = "Mật khẩu là bắt buộc";
         if (!registerData.phoneNumber.trim()) errors.phoneNumber = "Số điện thoại là bắt buộc";
         if (registerData.password !== registerData.confirmPassword) {
@@ -168,12 +168,12 @@ const LoginModal = ({
 
         try {
             const response = await authService.login({
-                username: loginData.username,
+                email: loginData.email,
                 password: loginData.password,
             });
 
             if (onLoginSuccess) {
-                onLoginSuccess(response.data);
+                onLoginSuccess(response?.data?.data || response?.data);
             }
         } catch (error) {
             handleAuthError(error);
@@ -195,7 +195,7 @@ const LoginModal = ({
 
         try {
             const response = await authService.register({
-                username: registerData.username,
+                email: registerData.email,
                 password: registerData.password,
                 phoneNumber: registerData.phoneNumber
             });
@@ -267,15 +267,15 @@ const LoginModal = ({
                     <FormContainer active={activeTab === 'login'}>
                         <StyledTextField
                             fullWidth
-                            label="Tên đăng nhập"
+                            label="Email"
                             variant="outlined"
                             type="text"
-                            name="username"
-                            value={loginData.username}
+                            name="email"
+                            value={loginData.email}
                             onChange={handleLoginChange}
                             required
-                            error={!!fieldErrors.username}
-                            helperText={fieldErrors.username}
+                            error={!!fieldErrors.email}
+                            helperText={fieldErrors.email}
                             disabled={isLoading}
                         />
                         <StyledTextField
@@ -310,15 +310,15 @@ const LoginModal = ({
                     <FormContainer active={activeTab === 'register'}>
                         <StyledTextField
                             fullWidth
-                            label="Tên đăng nhập"
+                            label="Email"
                             variant="outlined"
                             type="text"
-                            name="username"
-                            value={registerData.username}
+                            name="email"
+                            value={registerData.email}
                             onChange={handleRegisterChange}
                             required
-                            error={!!fieldErrors.username}
-                            helperText={fieldErrors.username}
+                            error={!!fieldErrors.email}
+                            helperText={fieldErrors.email}
                             disabled={isLoading}
                         />
                         <StyledTextField

@@ -18,6 +18,7 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp"; // Icon q
 import Sidebar from "../manager/Sidebar";
 import Topbar from "../manager/Topbar";
 import { Outlet } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
 
 const drawerWidth = 240;
 const collapsedWidth = 80;
@@ -87,6 +88,7 @@ function ScrollTop({ children }) {
 }
 
 const ManagerLayout = () => {
+	const { user } = useAuth();
 	// === QUẢN LÝ THEME ===
 	const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
 	const [mode, setMode] = useState(() => {
@@ -108,10 +110,9 @@ const ManagerLayout = () => {
 		setIsSidebarCollapsed((prev) => !prev);
 	}, []);
 
-	// === DỮ LIỆU USER GIẢ ===
-	const user = {
-		name: "Chủ Sân",
-		role: "Administrator",
+	const sidebarUser = {
+		name: user?.fullName || user?.username || "Chủ sân",
+		role: user?.role || "MANAGER",
 	};
 
 	return (
@@ -120,7 +121,7 @@ const ManagerLayout = () => {
 			<Box sx={{ display: "flex", minHeight: "100vh" }}>
 				{/* Sidebar */}
 				<Sidebar
-					user={user}
+					user={sidebarUser}
 					theme={theme}
 					toggleTheme={toggleTheme}
 					isCollapsed={isSidebarCollapsed}

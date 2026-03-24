@@ -11,17 +11,18 @@ import {
 	Badge,
 } from "@mui/material";
 import { Logout, Notifications, Menu as MenuIcon } from "@mui/icons-material";
-import axios from "axios";
+import { useAuth } from "../../../context/AuthContext";
 
 const Topbar = ({ toggleSidebar, isSidebarCollapsed, children, theme }) => {
+	const { user, logout } = useAuth();
 	const [currentTime, setCurrentTime] = useState(
 		new Date().toLocaleString("vi-VN", {
 			timeZone: "Asia/Ho_Chi_Minh",
 			hour12: false,
 		})
 	);
-	const [ownerName, setOwnerName] = useState("Loading...");
 	const [notifications, setNotifications] = useState(0);
+	const ownerName = user?.fullName || user?.username || "Chủ sân";
 
 	useEffect(() => {
 		const interval = setInterval(() => {
@@ -35,32 +36,8 @@ const Topbar = ({ toggleSidebar, isSidebarCollapsed, children, theme }) => {
 		return () => clearInterval(interval);
 	}, []);
 
-	useEffect(() => {
-		const fetchOwnerInfo = async () => {
-			const token = localStorage.getItem("authToken");
-			if (!token) {
-				setOwnerName("Chủ sân");
-				return;
-			}
-
-			try {
-				const res = await axios.get("http://localhost:8080/api/accounts/me", {
-					headers: {
-						Authorization: `Bearer ${token}`,
-					},
-				});
-				setOwnerName(res.data.fullName || "Chủ sân");
-			} catch (err) {
-				console.error("Không thể lấy thông tin người dùng", err);
-				setOwnerName("Chủ sân");
-			}
-		};
-
-		fetchOwnerInfo();
-	}, []);
-
 	const handleLogout = () => {
-		localStorage.removeItem("authToken");
+		logout();
 		window.location.href = "/login";
 	};
 

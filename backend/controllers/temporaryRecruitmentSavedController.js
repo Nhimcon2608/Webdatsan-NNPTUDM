@@ -1,13 +1,15 @@
 import { created, ok } from "../utils/response.js";
 import { insert, list, removeById } from "../utils/store.js";
 
-export function getSavedTemporaryRecruitments(req, res) {
+export async function getSavedTemporaryRecruitments(req, res) {
   const accountId = req.context.accountId;
-  const rows = list("temporaryRecruitmentSaved").filter((item) => item.accountId === accountId);
+  const rows = (await list("temporaryRecruitmentSaved")).filter(
+    (item) => item.accountId === accountId,
+  );
   return ok(res, rows);
 }
 
-export function saveTemporaryRecruitment(req, res) {
+export async function saveTemporaryRecruitment(req, res) {
   const accountId = req.context.accountId;
   const temporaryRecruitmentId = req.body?.temporaryRecruitmentId;
 
@@ -15,7 +17,7 @@ export function saveTemporaryRecruitment(req, res) {
     return res.status(400).json({ success: false, message: "temporaryRecruitmentId is required" });
   }
 
-  const createdRow = insert("temporaryRecruitmentSaved", {
+  const createdRow = await insert("temporaryRecruitmentSaved", {
     accountId,
     temporaryRecruitmentId,
   });
@@ -23,11 +25,11 @@ export function saveTemporaryRecruitment(req, res) {
   return created(res, createdRow, "Saved temporary recruitment");
 }
 
-export function unsaveTemporaryRecruitment(req, res) {
+export async function unsaveTemporaryRecruitment(req, res) {
   const { temporaryRecruitmentId } = req.params;
   const accountId = req.context.accountId;
 
-  const current = list("temporaryRecruitmentSaved").find(
+  const current = (await list("temporaryRecruitmentSaved")).find(
     (item) =>
       item.accountId === accountId && item.temporaryRecruitmentId === temporaryRecruitmentId,
   );
@@ -36,6 +38,6 @@ export function unsaveTemporaryRecruitment(req, res) {
     return res.status(404).json({ success: false, message: "Saved record not found" });
   }
 
-  removeById("temporaryRecruitmentSaved", current.id);
+  await removeById("temporaryRecruitmentSaved", current.id);
   return ok(res, current, "Unsaved temporary recruitment");
 }

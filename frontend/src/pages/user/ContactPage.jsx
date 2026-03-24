@@ -44,12 +44,12 @@ const ContactPage = () => {
 		setIsLoading(true);
 		try {
 			const ownerResponse = await ownerService.getOwnerByPhoneNumber(ownerData.phoneNumber);
-			if (ownerResponse.data) {
+			if (ownerResponse) {
 				setOwnerData({
-					id: ownerResponse.data.id,
-					phoneNumber: ownerResponse.data.phoneNumber,
-					ownerName: ownerResponse.data.ownerName,
-					email: ownerResponse.data.email
+					id: ownerResponse.id,
+					phoneNumber: ownerResponse.phoneNumber,
+					ownerName: ownerResponse.ownerName,
+					email: ownerResponse.email
 				});
 				handleOpenModal();
 

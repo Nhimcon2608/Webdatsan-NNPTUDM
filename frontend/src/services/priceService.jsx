@@ -1,11 +1,17 @@
 import apiClient from "./api";
+import {
+	groupPricesByType,
+	normalizePrice,
+	normalizePriceList,
+	unwrapApiData,
+} from "./normalizers";
 
 const priceService = {
 	// Lấy tất cả bảng giá
 	getAll: async () => {
 		try {
 			const response = await apiClient.get("/prices");
-			return response.data;
+			return normalizePriceList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching all prices:", error);
 			throw error;
@@ -16,7 +22,7 @@ const priceService = {
 	getById: async (id) => {
 		try {
 			const response = await apiClient.get(`/prices/${id}`);
-			return response.data;
+			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error fetching price by id ${id}:`, error);
 			throw error;
@@ -27,7 +33,7 @@ const priceService = {
 	getByBranchId: async (branchId) => {
 		try {
 			const response = await apiClient.get(`/prices/branch/${branchId}`);
-			return response.data;
+			return normalizePriceList(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error fetching prices by branchId ${branchId}:`, error);
 			throw error;
@@ -37,7 +43,7 @@ const priceService = {
 	getAllPriceTypesByBranch: async (branchId) => {
 		try {
 			const response = await apiClient.get(`/prices/branch/${branchId}/all-types`);
-			return response.data;
+			return groupPricesByType(response);
 		} catch (error) {
 			console.error(`Error fetching all price types by branchId ${branchId}:`, error);
 			throw error;
@@ -48,7 +54,7 @@ const priceService = {
 		try {
 			const token = localStorage.getItem("accessToken");
 			const response = await apiClient.get(`/prices/branch/${branchId}/price-type/${priceTypeId}`);
-			return response.data;
+			return normalizePriceList(unwrapApiData(response));
 		} catch (error) {
 			console.error(
 				`Error fetching prices by branchId ${branchId} and priceTypeId ${priceTypeId}:`,
@@ -64,7 +70,7 @@ const priceService = {
 	create: async (data) => {
 		try {
 			const response = await apiClient.post("/prices", data);
-			return response.data;
+			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error creating price:", error);
 			throw error;
@@ -75,7 +81,7 @@ const priceService = {
 	update: async (id, data) => {
 		try {
 			const response = await apiClient.put(`/prices/${id}`, data);
-			return response.data;
+			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error updating price with id ${id}:`, error);
 			throw error;
@@ -86,7 +92,7 @@ const priceService = {
 	delete: async (id) => {
 		try {
 			const response = await apiClient.delete(`/prices/${id}`);
-			return response.data;
+			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error deleting price with id ${id}:`, error);
 			throw error;

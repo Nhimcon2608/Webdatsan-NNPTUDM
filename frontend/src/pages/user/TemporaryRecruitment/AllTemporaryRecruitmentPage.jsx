@@ -142,7 +142,7 @@ const AllTemporaryRecruitmentPage = ({ user = null }) => {
     // console.log("registrationIds: ", registrationIds);
 
     useEffect(() => {
-        onEvent("TEMPORARY_RECRUITMENT_POST_CREATED", () => {
+        return onEvent("TEMPORARY_RECRUITMENT_POST_CREATED", () => {
             setHasNewData(true);
         });
     }, [onEvent]);

@@ -1,4 +1,8 @@
 import apiClient from "./api";
+import {
+	normalizeReservationDetail,
+	unwrapApiData,
+} from "./normalizers";
 
 const reservationDetailService = {
     getAllDetailOfReservation: async (reservationId) => { },
@@ -6,8 +10,8 @@ const reservationDetailService = {
     postReservationDetail: async (formData) => {
         try {
             const reposonse = await apiClient.post("/reservation-details", formData);
-            return reposonse.data;
-        } catch {
+            return normalizeReservationDetail(unwrapApiData(reposonse));
+        } catch (error) {
             console.error("Error fetching reservations details:", error);
             throw error;
         }
@@ -20,7 +24,9 @@ const reservationDetailService = {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
-            return response.data;
+            return (unwrapApiData(response) || []).map((detail, index) =>
+                normalizeReservationDetail(detail, index)
+            );
         } catch (error) {
             console.error("Error fetching today slots:", error);
             throw new Error(

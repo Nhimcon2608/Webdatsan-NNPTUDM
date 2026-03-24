@@ -59,7 +59,9 @@ const LoginPage = () => {
     const handleLoginSuccess = async (response) => {
         localStorage.setItem('authToken', response.token);
         const userLogged = await login();
-        redirectUserBasedOnRole(userLogged.role);
+        if (userLogged?.role) {
+            redirectUserBasedOnRole(userLogged.role);
+        }
     };
 
     const handleRegisterSuccess = () => {

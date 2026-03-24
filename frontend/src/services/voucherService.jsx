@@ -1,10 +1,15 @@
 import apiClient from "./api";
+import {
+	normalizeVoucher,
+	normalizeVoucherList,
+	unwrapApiData,
+} from "./normalizers";
 
 const voucherService = {
     getAllVouchersOfBranch: async (branchId) => {
         try {
             const response = await apiClient.get(`/vouchers/branch/${branchId}`);
-            return response.data;
+            return normalizeVoucherList(unwrapApiData(response));
         } catch (error) {
             console.error("Error fetching branch reviews:", error);
             throw error;
@@ -15,8 +20,9 @@ const voucherService = {
             const response = await apiClient.post("/vouchers", voucherData, {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            console.log("Voucher created:", response.data);
-            return response.data;
+            const voucher = normalizeVoucher(unwrapApiData(response));
+            console.log("Voucher created:", voucher);
+            return voucher;
         } catch (error) {
             console.error("Error creating voucher:", error);
             throw new Error(error.response?.data?.message || "Tạo voucher thất bại.");
@@ -32,8 +38,9 @@ const voucherService = {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
-            console.log("Voucher updated:", response.data);
-            return response.data;
+            const voucher = normalizeVoucher(unwrapApiData(response));
+            console.log("Voucher updated:", voucher);
+            return voucher;
         } catch (error) {
             console.error("Error updating voucher:", error);
             throw new Error(
@@ -49,8 +56,9 @@ const voucherService = {
                 {},
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            console.log("Voucher availability toggled:", response.data);
-            return response.data;
+            const voucher = normalizeVoucher(unwrapApiData(response));
+            console.log("Voucher availability toggled:", voucher);
+            return voucher;
         } catch (error) {
             console.error("Error toggling voucher availability:", error);
             throw new Error(

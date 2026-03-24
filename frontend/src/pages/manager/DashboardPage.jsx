@@ -140,7 +140,7 @@ const DashboardContent = () => {
 	const [filterStatus, setFilterStatus] = useState("ALL");
 	const [selectedReservation, setSelectedReservation] = useState(null);
 	const [revenueByMonth, setRevenueByMonth] = useState({ labels: [], data: [] });
-	const { onEvent } = useSSE(user.id);
+	const { onEvent } = useSSE(user?.id);
 
 	// ==================== EFFECTS ====================
 	useEffect(() => {
@@ -259,7 +259,7 @@ const DashboardContent = () => {
 			setSuccessMessage("Có đặt sân mới!");
 		};
 
-		onEvent("RESERVATION_CREATED", handleNewReservation);
+		return onEvent("RESERVATION_CREATED", handleNewReservation);
 	}, [onEvent]);
 
 	// ==================== HANDLERS ====================
@@ -607,7 +607,7 @@ const DashboardContent = () => {
 				.sort((a, b) => new Date(a.startTime) - new Date(b.startTime))
 				.filter(
 					(res) =>
-						res.playerName?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+						(res.playerName || "").toLowerCase().includes(searchTerm.toLowerCase()) &&
 						(filterStatus === "ALL" || res.status === filterStatus)
 				),
 		[todayReservations, searchTerm, filterStatus]
@@ -620,7 +620,7 @@ const DashboardContent = () => {
 				.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 				.filter(
 					(res) =>
-						res.playerName?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+						(res.playerName || "").toLowerCase().includes(searchTerm.toLowerCase()) &&
 						(filterStatus === "ALL" || res.status === filterStatus)
 				),
 		[recentReservations, searchTerm, filterStatus]

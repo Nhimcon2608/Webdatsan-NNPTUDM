@@ -1,4 +1,10 @@
 import apiClient from "./api";
+import {
+	groupPricesByType,
+	normalizeBranch,
+	normalizePriceList,
+	unwrapApiData,
+} from "./normalizers";
 
 const branchService = {
     getAllBranches: async (isCooperated) => {
@@ -6,7 +12,7 @@ const branchService = {
             const response = await apiClient.get(
                 `/branches/is-cooperated/${isCooperated}`
             );
-            return response.data;
+            return (unwrapApiData(response) || []).map(normalizeBranch);
         } catch (error) {
             console.error("Error fetching branches:", error);
             throw error;
@@ -16,7 +22,7 @@ const branchService = {
     getAllPricesOfBranch: async (branchId) => {
         try {
             const response = await apiClient.get(`/prices/branch/${branchId}`);
-            return response.data;
+            return normalizePriceList(unwrapApiData(response));
         } catch (error) {
             console.error("Error fetching branch prices:", error);
             throw error;
@@ -26,7 +32,7 @@ const branchService = {
     getBranchById: async (branchId) => {
         try {
             const response = await apiClient.get(`/branches/${branchId}`);
-            return response.data;
+            return normalizeBranch(unwrapApiData(response));
         } catch (error) {
             console.error('Error fetching branch:', error);
             throw error;
@@ -36,7 +42,7 @@ const branchService = {
     getBranchByPartnershipRequest: async (requestId) => {
         try {
             const response = await apiClient.get(`/branches/request/${requestId}`);
-            return response.data;
+            return normalizeBranch(unwrapApiData(response));
         } catch (error) {
             console.error('Error fetching branch:', error);
             throw error;
@@ -46,7 +52,7 @@ const branchService = {
     changeCooperate: async (branchId, cooperated) => {
         try {
             const response = await apiClient.put(`/branches/${branchId}/status`, cooperated);
-            return response.data;
+            return normalizeBranch(unwrapApiData(response));
         } catch (error) {
             console.error('Error fetching branch:', error);
             throw error;
@@ -56,7 +62,7 @@ const branchService = {
     createBranch: async (formData) => {
         try {
             const response = await apiClient.post(`/branches`, formData);
-            return response.data;
+            return normalizeBranch(unwrapApiData(response));
         } catch (error) {
             console.error('Error create branch:', error);
             throw error;
@@ -66,7 +72,7 @@ const branchService = {
     getBranchByAccountId: async (accountId) => {
         try {
             const response = await apiClient.get(`/branches/manager/${accountId}`);
-            return response.data;
+            return normalizeBranch(unwrapApiData(response));
         } catch (error) {
             console.error("Error fetching branch by account ID:", error);
             throw error;
@@ -88,8 +94,9 @@ const branchService = {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
-            console.log("Branch updated successfully:", response.data);
-            return response.data;
+            const updatedBranch = normalizeBranch(unwrapApiData(response));
+            console.log("Branch updated successfully:", updatedBranch);
+            return updatedBranch;
         } catch (error) {
             console.error("Error updating branch:", error);
             const errorMessage =
