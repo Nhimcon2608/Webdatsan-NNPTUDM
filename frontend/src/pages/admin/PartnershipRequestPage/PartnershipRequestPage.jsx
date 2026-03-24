@@ -84,10 +84,11 @@ const PartnershipRequestPage = () => {
 		try {
 			setLoading(true);
 			const response = await ownerService.getAllOwner();
-			setOwners(response);
+			const ownerRows = Array.isArray(response) ? response : [];
+			setOwners(ownerRows);
 
 			const initialExpandedState = {};
-			response.forEach(owner => {
+			ownerRows.forEach(owner => {
 				initialExpandedState[owner.id] = true;
 			});
 			setExpandedOwners(initialExpandedState);

@@ -35,6 +35,9 @@ const MyAccountPage = () => {
     const { user, login } = useAuth();
     const { showSnackbar } = useSnackbar();
     const isMobile = useMediaQuery(adminTheme.breakpoints.down('md'));
+    const displayName = user?.username || user?.fullName || user?.email || 'Admin';
+    const displayImage = user?.imagePath || user?.avatarUrl || '';
+    const displayInitial = displayName.charAt(0).toUpperCase();
 
     const [openChangePasswordModal, setOpenChangePasswordModal] = useState(false);
     const [emailNotifications, setEmailNotifications] = useState(false);
@@ -119,10 +122,10 @@ const MyAccountPage = () => {
                                         mr: isMobile ? 0 : 3
                                     }}
                                 >
-                                    {user.imagePath ? (
+                                    {displayImage ? (
                                         <Avatar
-                                            src={`${import.meta.env.VITE_API_URL}/${user.imagePath}`}
-                                            alt={user.username}
+                                            src={`${import.meta.env.VITE_API_URL}/${displayImage}`}
+                                            alt={displayName}
                                             sx={{
                                                 width: 100,
                                                 height: 100,
@@ -131,14 +134,14 @@ const MyAccountPage = () => {
                                         />
                                     ) : (
                                         <Avatar
-                                            style={{ backgroundColor: stringToColor(user.username) }}
+                                            style={{ backgroundColor: stringToColor(displayName) }}
                                             sx={{
                                                 width: 100,
                                                 height: 100,
                                                 border: `3px solid ${adminTheme.palette.primary.light}`
                                             }}
                                         >
-                                            {user.username.charAt(0).toUpperCase()}
+                                            {displayInitial}
                                         </Avatar>
                                     )}
                                     <IconButton
@@ -172,7 +175,7 @@ const MyAccountPage = () => {
                                             color: adminTheme.palette.text.primary
                                         }}
                                     >
-                                        {user.username}
+                                        {displayName}
                                     </Typography>
 
                                     <Typography
@@ -182,7 +185,7 @@ const MyAccountPage = () => {
                                             mt: 1
                                         }}
                                     >
-                                        {user.email}
+                                        {user?.email || '-'}
                                     </Typography>
                                     <Typography
                                         variant="body1"
@@ -191,7 +194,7 @@ const MyAccountPage = () => {
                                             mt: 1
                                         }}
                                     >
-                                        {user.phoneNumber}
+                                        {user?.phoneNumber || '-'}
                                     </Typography>
                                 </Box>
                             </Box>

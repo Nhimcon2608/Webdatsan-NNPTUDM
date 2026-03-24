@@ -14,8 +14,11 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('authToken');
             if (token) {
                 try {
-                    const userData = await userService.getAccount();
-                    setUser(userData.data);
+                    const response = await userService.getAccount();
+                    const account = response?.data?.data ?? null;
+                    if (isMounted) {
+                        setUser(account);
+                    }
                 } catch (error) {
                     console.error('Lỗi lấy thông tin user:', error);
                     localStorage.removeItem('authToken');
@@ -31,11 +34,13 @@ export const AuthProvider = ({ children }) => {
 
     const login = async () => {
         try {
-            const userData = await userService.getAccount();
-            setUser(userData.data);
-            return userData.data;
+            const response = await userService.getAccount();
+            const account = response?.data?.data ?? null;
+            setUser(account);
+            return account;
         } catch (error) {
             console.error('Lỗi lấy thông tin user:', error);
+            return null;
         }
     };
 

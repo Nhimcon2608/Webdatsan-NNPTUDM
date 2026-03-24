@@ -1,16 +1,14 @@
-# Backend RESTful scaffold (Node.js)
+# Backend RESTful scaffold (Node.js + MongoDB)
 
-## Stack de xuat phu hop frontend hien tai
+## Stack hien tai
 - Runtime: Node.js 20+ LTS
 - Framework: Express.js
 - Validation: Zod
 - Upload: Multer
 - Security/Middleware: Helmet, CORS, Morgan
-- CSDL khuyen nghi cho bai toan dat san: PostgreSQL
+- CSDL: MongoDB
 
-Ly do chon PostgreSQL: he thong co nhieu quan he (tai khoan -> chi nhanh -> san -> lich dat -> hoa don/voucher), can query theo ngay/khoang thoi gian/trang thai va bao cao, phu hop mo hinh quan he.
-
-Luu y: scaffold hien tai dang dung in-memory store de frontend goi API ngay. Ban co the thay `utils/store.js` bang tang repository ket noi PostgreSQL (Prisma/Sequelize) ma khong doi URL API.
+Backend hien tai da ket noi MongoDB qua official `mongodb` driver. Du lieu mau duoc seed tu dong khi database rong, giu nguyen contract API de frontend khong can doi.
 
 ## Cau truc bat buoc da tao
 - `bin/`
@@ -22,10 +20,30 @@ Luu y: scaffold hien tai dang dung in-memory store de frontend goi API ngay. Ban
 - `package.json`
 
 ## Chay backend
+### Cach 1: MongoDB local
+```bash
+mongod --dbpath /tmp/webdatsan-mongodb --bind_ip 127.0.0.1 --port 27017
+```
+
+### Cach 2: MongoDB bang Docker
+```bash
+docker compose up -d mongodb
+```
+
+### Chay API
 ```bash
 cd backend
 npm install
+npm run seed:defaults
 npm run dev
+```
+
+Bien moi truong mac dinh:
+```env
+PORT=8080
+NODE_ENV=development
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_DB_NAME=webdatsan
 ```
 
 ## API groups da map theo frontend services
@@ -127,4 +145,4 @@ npm run dev
 - REST Client (hoac Thunder Client)
 - DotENV
 - Error Lens
-- Prisma (neu ban dung PostgreSQL + Prisma)
+- MongoDB for VS Code

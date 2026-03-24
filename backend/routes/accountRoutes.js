@@ -1,8 +1,9 @@
-import { Router } from "express";
+import { Router } from "../utils/router.js";
 import multer from "multer";
 
 import {
   changePassword,
+  getAllAccounts,
   getMe,
   updatePhone,
   uploadImage,
@@ -11,6 +12,7 @@ import {
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
+router.get("/", getAllAccounts);
 router.patch("/change-password", changePassword);
 router.get("/me", getMe);
 router.put("/me/phone", updatePhone);

@@ -95,6 +95,9 @@ const Sidebar = ({
     const { user, logout } = useAuth();
     const location = useLocation();
     const currentPath = location.pathname.split('/')[2] || 'dashboard';
+    const displayName = user?.username || user?.fullName || user?.email || 'Admin';
+    const displayImage = user?.imagePath || user?.avatarUrl || '';
+    const displayInitial = displayName.charAt(0).toUpperCase();
 
     const handleLogoutClick = async () => {
 
@@ -168,15 +171,15 @@ const Sidebar = ({
                         mr: sidebarCollapsed ? 0 : 2,
                         justifyContent: 'center'
                     }}>
-                        {user.imagePath ?
-                            <Avatar src={`${import.meta.env.VITE_API_URL}/${user.imagePath}`} alt={user.username} />
+                        {displayImage ?
+                            <Avatar src={`${import.meta.env.VITE_API_URL}/${displayImage}`} alt={displayName} />
 
-                            : <Avatar style={{ backgroundColor: stringToColor(user.username) }}>
-                                {user.username.charAt(0).toUpperCase()}
+                            : <Avatar style={{ backgroundColor: stringToColor(displayName) }}>
+                                {displayInitial}
                             </Avatar>
                         }
                     </ListItemIcon>
-                    {!sidebarCollapsed && <ListItemText primary={user.username} />}
+                    {!sidebarCollapsed && <ListItemText primary={displayName} />}
                 </StyledListItemButton>
                 <StyledListItemButton
                     component={Link}

@@ -1,20 +1,47 @@
 import { created, ok } from "../utils/response.js";
 import { insert, list, updateById } from "../utils/store.js";
+import {
+  normalizePartnershipRequestStatus,
+  serializePartnershipRequest,
+} from "../utils/partnershipRequestView.js";
 
-export function createPartnershipRequest(req, res) {
-  const createdRequest = insert("partnershipRequests", {
+export async function createPartnershipRequest(req, res) {
+  const owner = req.body?.owner || {};
+  const partner = req.body?.partner || {};
+  const createdRequest = await insert("partnershipRequests", {
     ...req.body,
-    status: req.body?.status || "PENDING",
+    ownerId: req.body?.ownerId || owner.id || "",
+    ownerName: req.body?.ownerName || owner.ownerName || owner.fullName || "",
+    ownerPhoneNumber: req.body?.ownerPhoneNumber || owner.phoneNumber || "",
+    ownerEmail: req.body?.ownerEmail || owner.email || "",
+    branchName: req.body?.branchName || partner.branchName || "",
+    address: req.body?.address || partner.address || "",
+    phoneNumber: req.body?.phoneNumber || partner.phoneNumber || "",
+    status: normalizePartnershipRequestStatus(req.body?.status || "sent"),
   });
 
-  return created(res, createdRequest, "Partnership request created");
+  return created(res, serializePartnershipRequest(createdRequest), "Partnership request created");
 }
 
-export function getAllPartnershipRequests(_req, res) {
-  return ok(res, list("partnershipRequests"));
+export async function getAllPartnershipRequests(_req, res) {
+  const [requests, branches] = await Promise.all([
+    list("partnershipRequests"),
+    list("branches"),
+  ]);
+
+  const rows = requests.map((request) => {
+    const branch = branches.find(
+      (branchItem) =>
+        branchItem.id === request?.branchId ||
+        branchItem.partnershipRequestId === request?.id,
+    );
+    return serializePartnershipRequest(request, { branch });
+  });
+
+  return ok(res, rows);
 }
 
-export function updatePartnershipRequestStatus(req, res) {
+export async function updatePartnershipRequestStatus(req, res) {
   const { requestId } = req.params;
   const status = req.body?.status || req.body?.value || req.body?.newStatus;
 
@@ -22,10 +49,12 @@ export function updatePartnershipRequestStatus(req, res) {
     return res.status(400).json({ success: false, message: "status is required" });
   }
 
-  const updated = updateById("partnershipRequests", requestId, { status });
+  const updated = await updateById("partnershipRequests", requestId, {
+    status: normalizePartnershipRequestStatus(status),
+  });
   if (!updated) {
     return res.status(404).json({ success: false, message: "Partnership request not found" });
   }
 
-  return ok(res, updated, "Partnership status updated");
+  return ok(res, serializePartnershipRequest(updated), "Partnership status updated");
 }

@@ -1,4 +1,5 @@
 import apiClient from "./api";
+import { normalizeAccount, unwrapApiData } from "./normalizers";
 
 const authService = {
     login: (loginData) => {
@@ -20,7 +21,7 @@ const authService = {
     getCurrentAccount: async () => {
         try {
             const response = await apiClient.get("/accounts/me");
-            return response.data;
+            return normalizeAccount(unwrapApiData(response));
         } catch (error) {
             console.error("Error fetching current account:", error);
             throw error;
@@ -34,8 +35,9 @@ const authService = {
                 { phoneNumber },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
-            console.log("Phone number updated:", response.data);
-            return response.data;
+            const account = normalizeAccount(unwrapApiData(response));
+            console.log("Phone number updated:", account);
+            return account;
         } catch (error) {
             console.error("Error updating phone number:", error);
             throw new Error(

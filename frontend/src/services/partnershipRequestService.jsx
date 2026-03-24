@@ -1,11 +1,16 @@
 import apiClient from "./api";
+import {
+	normalizePartnershipRequest,
+	normalizePartnershipRequestList,
+	unwrapApiData,
+} from "./normalizers";
 
 const partnershipRequestService = {
 
 	postPartnershipRequest: async (formData) => {
 		try {
 			const respone = await apiClient.post('/partnershiprequests', formData);
-			return respone;
+			return normalizePartnershipRequest(unwrapApiData(respone));
 		} catch (error) {
 			console.log(error);
 			throw error;
@@ -16,7 +21,7 @@ const partnershipRequestService = {
 
 		try {
 			const respone = await apiClient.get('/partnershiprequests');
-			return respone.data;
+			return normalizePartnershipRequestList(unwrapApiData(respone));
 		} catch (error) {
 			console.log(error);
 			throw error;
@@ -27,7 +32,7 @@ const partnershipRequestService = {
 	updateStatus: async (requestId, status) => {
 		try {
 			const respone = await apiClient.patch(`/partnershiprequests/${requestId}/status`, status);
-			return respone.data;
+			return normalizePartnershipRequest(unwrapApiData(respone));
 		} catch (error) {
 			console.log(error);
 			throw error;

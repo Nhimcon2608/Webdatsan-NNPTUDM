@@ -1,28 +1,28 @@
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, removeById, updateById } from "../utils/store.js";
 
-export function getAllPrices(_req, res) {
-  return ok(res, list("prices"));
+export async function getAllPrices(_req, res) {
+  return ok(res, await list("prices"));
 }
 
-export function getPriceById(req, res) {
-  const row = findById("prices", req.params.id);
+export async function getPriceById(req, res) {
+  const row = await findById("prices", req.params.id);
   if (!row) {
     return res.status(404).json({ success: false, message: "Price not found" });
   }
   return ok(res, row);
 }
 
-export function getPricesByBranch(req, res) {
+export async function getPricesByBranch(req, res) {
   const { branchId } = req.params;
-  const rows = list("prices").filter((item) => item.branchId === branchId);
+  const rows = (await list("prices")).filter((item) => item.branchId === branchId);
   return ok(res, rows);
 }
 
-export function getAllPriceTypesByBranch(req, res) {
+export async function getAllPriceTypesByBranch(req, res) {
   const { branchId } = req.params;
-  const prices = list("prices").filter((item) => item.branchId === branchId);
-  const allTypes = list("priceTypes");
+  const prices = (await list("prices")).filter((item) => item.branchId === branchId);
+  const allTypes = await list("priceTypes");
 
   const rows = allTypes.map((type) => ({
     ...type,
@@ -32,29 +32,29 @@ export function getAllPriceTypesByBranch(req, res) {
   return ok(res, rows);
 }
 
-export function getByBranchAndPriceType(req, res) {
+export async function getByBranchAndPriceType(req, res) {
   const { branchId, priceTypeId } = req.params;
-  const rows = list("prices").filter(
+  const rows = (await list("prices")).filter(
     (item) => item.branchId === branchId && item.priceTypeId === priceTypeId,
   );
   return ok(res, rows);
 }
 
-export function createPrice(req, res) {
-  const createdRow = insert("prices", req.body || {});
+export async function createPrice(req, res) {
+  const createdRow = await insert("prices", req.body || {});
   return created(res, createdRow, "Price created");
 }
 
-export function updatePrice(req, res) {
-  const updated = updateById("prices", req.params.id, req.body || {});
+export async function updatePrice(req, res) {
+  const updated = await updateById("prices", req.params.id, req.body || {});
   if (!updated) {
     return res.status(404).json({ success: false, message: "Price not found" });
   }
   return ok(res, updated, "Price updated");
 }
 
-export function deletePrice(req, res) {
-  const deleted = removeById("prices", req.params.id);
+export async function deletePrice(req, res) {
+  const deleted = await removeById("prices", req.params.id);
   if (!deleted) {
     return res.status(404).json({ success: false, message: "Price not found" });
   }

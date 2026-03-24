@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router } from "../utils/router.js";
 
 import accountRoutes from "./accountRoutes.js";
 import authRoutes from "./authRoutes.js";
@@ -15,6 +15,7 @@ import priceTypeRoutes from "./priceTypeRoutes.js";
 import reservationDetailRoutes from "./reservationDetailRoutes.js";
 import reservationRoutes from "./reservationRoutes.js";
 import reviewRoutes from "./reviewRoutes.js";
+import sseRoutes from "./sseRoutes.js";
 import temporaryRecruitmentRoutes from "./temporaryRecruitmentRoutes.js";
 import temporaryRecruitmentSavedRoutes from "./temporaryRecruitmentSavedRoutes.js";
 import temporaryRegistrationRoutes from "./temporaryRegistrationRoutes.js";
@@ -45,6 +46,7 @@ router.use("/temporary-registrations", temporaryRegistrationRoutes);
 router.use("/reviews", reviewRoutes);
 router.use("/payments", paymentRoutes);
 router.use("/payment", paymentRoutes);
+router.use("/sse", sseRoutes);
 router.use("/vouchers", voucherRoutes);
 
 export default router;

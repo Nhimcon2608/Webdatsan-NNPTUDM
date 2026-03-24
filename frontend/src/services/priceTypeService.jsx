@@ -1,12 +1,13 @@
 // src/services/priceTypeService.js
 import apiClient from "./api";
+import { normalizePriceType, unwrapApiData } from "./normalizers";
 
 const priceTypeService = {
 	// Lấy tất cả PriceType
 	getAll: async () => {
 		try {
 			const response = await apiClient.get("/price-types");
-			return response.data;
+			return (unwrapApiData(response) || []).map(normalizePriceType);
 		} catch (error) {
 			console.error("Error fetching price types:", error);
 			throw error;
@@ -17,7 +18,7 @@ const priceTypeService = {
 	getById: async (id) => {
 		try {
 			const response = await apiClient.get(`/price-types/${id}`);
-			return response.data;
+			return normalizePriceType(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error fetching price type by id ${id}:`, error);
 			throw error;
@@ -28,7 +29,7 @@ const priceTypeService = {
 	create: async (data) => {
 		try {
 			const response = await apiClient.post("/price-types", data);
-			return response.data;
+			return normalizePriceType(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error creating price type:", error);
 			throw error;
@@ -39,7 +40,7 @@ const priceTypeService = {
 	delete: async (id) => {
 		try {
 			const response = await apiClient.delete(`/price-types/${id}`);
-			return response.data;
+			return normalizePriceType(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error deleting price type with id ${id}:`, error);
 			throw error;

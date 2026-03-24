@@ -62,7 +62,7 @@ const ReservationTable = () => {
 	const [rowsPerPage, setRowsPerPage] = useState(10);
 	const [justCreatedInvoiceId, setJustCreatedInvoiceId] = useState(null);
 	const { user } = useAuth();
-	const { onEvent } = useSSE(user.id);
+	const { onEvent } = useSSE(user?.id);
 
 
 	const fetchData = async () => {
@@ -105,7 +105,7 @@ const ReservationTable = () => {
 			);
 		};
 
-		onEvent("RESERVATION_CREATED", handleNewReservation);
+		return onEvent("RESERVATION_CREATED", handleNewReservation);
 	}, [onEvent]);
 
 

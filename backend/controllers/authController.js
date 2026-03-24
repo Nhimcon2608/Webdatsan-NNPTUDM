@@ -1,10 +1,15 @@
 import { created, ok } from "../utils/response.js";
 import { insert, list } from "../utils/store.js";
+import { toPublicAccount } from "../utils/accountView.js";
 
-export function login(req, res) {
-  const { email, password } = req.body || {};
-  const account = list("accounts").find(
-    (item) => item.email === email && item.password === password,
+export async function login(req, res) {
+  const payload = req.body || {};
+  const email = String(payload.email || payload.username || "")
+    .trim()
+    .toLowerCase();
+  const password = String(payload.password || "");
+  const account = (await list("accounts")).find(
+    (item) => item.email.toLowerCase() === email && item.password === password,
   );
 
   if (!account) {
@@ -15,29 +20,38 @@ export function login(req, res) {
     res,
     {
       token: `mock-token-${account.id}`,
-      account: {
-        id: account.id,
-        email: account.email,
-        fullName: account.fullName,
-        role: account.role,
-      },
+      account: toPublicAccount(account),
     },
     "Login successful",
   );
 }
 
-export function register(req, res) {
+export async function register(req, res) {
   const payload = req.body || {};
-  const account = insert("accounts", {
-    email: payload.email,
+  const email = String(payload.email || payload.username || "")
+    .trim()
+    .toLowerCase();
+
+  if (!email) {
+    return res.status(400).json({ success: false, message: "email is required" });
+  }
+
+  const accounts = await list("accounts");
+  const existing = accounts.find((item) => item.email.toLowerCase() === email);
+  if (existing) {
+    return res.status(409).json({ success: false, message: "Email already exists" });
+  }
+
+  const account = await insert("accounts", {
+    email,
     password: payload.password || "123456",
-    fullName: payload.fullName || "New Account",
+    fullName: payload.fullName || payload.username || email,
     phoneNumber: payload.phoneNumber || "",
     role: payload.role || "USER",
     avatarUrl: "",
   });
 
-  return created(res, account, "Register successful");
+  return created(res, toPublicAccount(account), "Register successful");
 }
 
 export function logout(_req, res) {

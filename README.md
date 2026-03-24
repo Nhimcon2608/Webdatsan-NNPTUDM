@@ -2,6 +2,8 @@
 
 WebDatSan là một ứng dụng web hiện đại để quản lý sân cầu lông, cho phép người dùng đặt sân, quản lý đặt chỗ, xử lý thanh toán, và quản lý toàn bộ hệ thống sân cầu lông.
 
+Backend hiện tại dùng MongoDB để lưu trữ dữ liệu.
+
 ## 📋 Mục lục
 
 - [Tính năng](#tính-năng)
@@ -47,6 +49,7 @@ WebDatSan là một ứng dụng web hiện đại để quản lý sân cầu l
 
 - **Node.js**: v16+ (hoặc v18+)
 - **npm**: v7+
+- **MongoDB**: v7+ hoặc Docker để chạy MongoDB
 - **Git**: Để clone dự án
 - **RAM**: Tối thiểu 2GB
 - **Hệ điều hành**: Windows, macOS, hoặc Linux
@@ -61,6 +64,18 @@ cd Webdatsan
 ```
 
 ### 2. Cài đặt Backend
+
+Khởi động MongoDB trước:
+
+**Cách 1: dùng MongoDB local**
+```bash
+mongod --dbpath /tmp/webdatsan-mongodb --bind_ip 127.0.0.1 --port 27017
+```
+
+**Cách 2: dùng Docker Compose**
+```bash
+docker compose up -d mongodb
+```
 
 ```bash
 cd backend
@@ -78,6 +93,8 @@ Nội dung `.env` (mặc định):
 ```env
 PORT=8080
 NODE_ENV=development
+MONGODB_URI=mongodb://127.0.0.1:27017
+MONGODB_DB_NAME=webdatsan
 ```
 
 ### 3. Cài đặt Frontend
@@ -106,6 +123,12 @@ VITE_API_URL=https://your-ngrok-url.ngrok.io
 #### Terminal 1 - Backend
 
 ```bash
+mongod --dbpath /tmp/webdatsan-mongodb --bind_ip 127.0.0.1 --port 27017
+```
+
+#### Terminal 2 - Backend API
+
+```bash
 cd backend
 npm run dev
 # hoặc
@@ -114,7 +137,7 @@ npm start
 
 Backend sẽ chạy tại: `http://localhost:8080`
 
-#### Terminal 2 - Frontend
+#### Terminal 3 - Frontend
 
 ```bash
 cd frontend
@@ -126,17 +149,12 @@ Frontend sẽ chạy tại: `http://localhost:5173`
 ### Chạy với Docker Compose
 
 ```bash
-# Chạy tất cả services
-docker-compose up --build
+# Chạy MongoDB
+docker compose up -d mongodb
 
-# Chạy background
-docker-compose up -d --build
-
-# Dừng services
-docker-compose down
+# Dừng MongoDB
+docker compose down
 ```
-
-**Lưu ý**: Docker Compose hiện tại được cấu hình cho kiến trúc Spring Boot, cần cập nhật nếu muốn dùng Node.js backend.
 
 ## 📂 Cấu trúc dự án
 
@@ -157,10 +175,11 @@ Webdatsan/
 │   ├── schemas/                      # Zod validation schemas
 │   ├── utils/
 │   │   ├── asyncHandler.js           # Async error handling
+│   │   ├── database.js               # MongoDB connection + seed
 │   │   ├── errorHandlers.js          # Error middleware
 │   │   ├── requestContext.js         # Request context tracking
 │   │   ├── response.js               # Standardized responses
-│   │   └── store.js                  # In-memory data store
+│   │   └── store.js                  # MongoDB CRUD helpers
 │   ├── app.js                        # Express app setup
 │   ├── .env.example                  # Environment template
 │   └── package.json
@@ -217,14 +236,14 @@ Request Flow:
 1. Request → Express Router
 2. Middleware (CORS, Helmet, Morgan, Auth validation)
 3. Controller (Business logic)
-4. Store (In-memory data store)
+4. Store (MongoDB-backed data access)
 5. Response (Standardized JSON format)
 ```
 
 **Key Components:**
 
 - **Controllers**: Xử lý business logic và HTTP responses
-- **Store (store.js)**: In-memory database với các table:
+- **Store (store.js)**: MongoDB collections:
   - `accounts`: Tài khoản người dùng
   - `players`: Thông tin cầu thủ
   - `owners`: Chủ sân
@@ -303,8 +322,13 @@ Dùng các tài khoản sau để đăng nhập:
 
 | Email | Password | Role | Note |
 |-------|----------|------|------|
+| `admin@webdatsan.vn` | `123456` | ADMIN | Quản trị hệ thống |
 | `manager@webdatsan.vn` | `123456` | MANAGER | Quản lý sân |
+| `manager2@webdatsan.vn` | `123456` | MANAGER | Quản lý chi nhánh Thu Duc |
+| `manager3@webdatsan.vn` | `123456` | MANAGER | Quản lý chi nhánh Go Vap |
 | `player@webdatsan.vn` | `123456` | USER | Người chơi |
+| `player2@webdatsan.vn` | `123456` | USER | Người chơi mới bắt đầu |
+| `player3@webdatsan.vn` | `123456` | USER | Người chơi nâng cao |
 
 **Đăng ký tài khoản mới**: Sử dụng form đăng ký trong ứng dụng
 
@@ -398,6 +422,7 @@ PUT    /vouchers/:id        - Cập nhật voucher
 cd backend
 npm run dev      # Chuyên sâu development mode với hot reload
 npm start        # Production mode
+npm run seed:defaults  # Nạp/bo sung tai khoan va du lieu mau
 npm test         # Run tests (if available)
 ```
 

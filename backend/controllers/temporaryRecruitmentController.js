@@ -8,9 +8,9 @@ function toBoolean(value) {
   return String(value).toLowerCase() === "true";
 }
 
-export function getAllTemporaryRecruitments(req, res) {
+export async function getAllTemporaryRecruitments(req, res) {
   const { branchId, available } = req.query;
-  let rows = [...list("temporaryRecruitments")];
+  let rows = [...(await list("temporaryRecruitments"))];
 
   if (branchId) {
     rows = rows.filter((item) => item.branchId === branchId);
@@ -23,38 +23,43 @@ export function getAllTemporaryRecruitments(req, res) {
   return ok(res, rows);
 }
 
-export function getTemporaryRecruitmentById(req, res) {
-  const row = findById("temporaryRecruitments", req.params.id);
+export async function getTemporaryRecruitmentById(req, res) {
+  const row = await findById("temporaryRecruitments", req.params.id);
   if (!row) {
     return res.status(404).json({ success: false, message: "Temporary recruitment not found" });
   }
   return ok(res, row);
 }
 
-export function getTemporaryRecruitmentFullInfor(req, res) {
-  const row = findById("temporaryRecruitments", req.params.id);
+export async function getTemporaryRecruitmentFullInfor(req, res) {
+  const row = await findById("temporaryRecruitments", req.params.id);
   if (!row) {
     return res.status(404).json({ success: false, message: "Temporary recruitment not found" });
   }
+
+  const [branches, reservations] = await Promise.all([
+    list("branches"),
+    list("reservations"),
+  ]);
 
   return ok(res, {
     ...row,
-    branch: list("branches").find((item) => item.id === row.branchId) || null,
-    reservation: list("reservations").find((item) => item.id === row.reservationId) || null,
+    branch: branches.find((item) => item.id === row.branchId) || null,
+    reservation: reservations.find((item) => item.id === row.reservationId) || null,
   });
 }
 
-export function getTemporaryRecruitmentByReservation(req, res) {
+export async function getTemporaryRecruitmentByReservation(req, res) {
   const { id } = req.params;
-  const row = list("temporaryRecruitments").find((item) => item.reservationId === id);
+  const row = (await list("temporaryRecruitments")).find((item) => item.reservationId === id);
   if (!row) {
     return res.status(404).json({ success: false, message: "Temporary recruitment not found" });
   }
   return ok(res, row);
 }
 
-export function createTemporaryRecruitment(req, res) {
-  const createdRow = insert("temporaryRecruitments", {
+export async function createTemporaryRecruitment(req, res) {
+  const createdRow = await insert("temporaryRecruitments", {
     ...req.body,
     available: req.body?.available ?? true,
   });
@@ -62,11 +67,11 @@ export function createTemporaryRecruitment(req, res) {
   return created(res, createdRow, "Temporary recruitment created");
 }
 
-export function changeTemporaryRecruitmentStatus(req, res) {
+export async function changeTemporaryRecruitmentStatus(req, res) {
   const { id } = req.params;
   const available = req.body?.available;
 
-  const updated = updateById("temporaryRecruitments", id, {
+  const updated = await updateById("temporaryRecruitments", id, {
     available: available === undefined ? true : toBoolean(available),
   });
 
@@ -77,9 +82,9 @@ export function changeTemporaryRecruitmentStatus(req, res) {
   return ok(res, updated, "Temporary recruitment status updated");
 }
 
-export function updateTemporaryRecruitment(req, res) {
+export async function updateTemporaryRecruitment(req, res) {
   const { id } = req.params;
-  const updated = updateById("temporaryRecruitments", id, req.body || {});
+  const updated = await updateById("temporaryRecruitments", id, req.body || {});
 
   if (!updated) {
     return res.status(404).json({ success: false, message: "Temporary recruitment not found" });
