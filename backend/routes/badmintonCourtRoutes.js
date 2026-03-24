@@ -2,18 +2,14 @@ import { Router } from "../utils/router.js";
 
 import {
   createCourt,
-  getCourtsByBranch,
-  getCourtsByBranchAndStatus,
-  getCourtsByManager,
-  toggleCourtStatus,
+  getCourts,
+  updateCourt,
 } from "../controllers/badmintonCourtController.js";
 
 const router = Router();
 
-router.get("/branch/:branchId/:status", getCourtsByBranchAndStatus);
-router.get("/branch/:branchId", getCourtsByBranch);
-router.get("/manager/:accountId", getCourtsByManager);
-router.patch("/:courtId/toggle", toggleCourtStatus);
+router.get("/", getCourts);
 router.post("/", createCourt);
+router.patch("/:courtId", updateCourt);
 
 export default router;

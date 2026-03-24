@@ -7,6 +7,10 @@ function resolveAccountId(req) {
   return accountIdFromBody || req.context.accountId || "acc-1";
 }
 
+function getUploadedFile(req) {
+  return req.file || req.files?.[0] || null;
+}
+
 export async function getMe(req, res) {
   const accountId = resolveAccountId(req);
   const account = await findById("accounts", accountId);
@@ -39,26 +43,43 @@ export async function changePassword(req, res) {
   return ok(res, null, "Password updated");
 }
 
-export async function updatePhone(req, res) {
+export async function updateAccount(req, res) {
   const accountId = resolveAccountId(req);
-  const { phoneNumber } = req.body || {};
+  const payload = req.body || {};
+  const patch = {};
 
-  if (!phoneNumber) {
-    return res.status(400).json({ success: false, message: "phoneNumber is required" });
+  if (payload.phoneNumber !== undefined) {
+    if (!payload.phoneNumber) {
+      return res.status(400).json({ success: false, message: "phoneNumber is required" });
+    }
+    patch.phoneNumber = payload.phoneNumber;
   }
 
-  const updated = await updateById("accounts", accountId, { phoneNumber });
+  if (payload.fullName) {
+    patch.fullName = payload.fullName;
+  }
+
+  if (payload.avatarUrl) {
+    patch.avatarUrl = payload.avatarUrl;
+  }
+
+  if (!Object.keys(patch).length) {
+    return res.status(400).json({ success: false, message: "No updatable fields provided" });
+  }
+
+  const updated = await updateById("accounts", accountId, patch);
   if (!updated) {
     return res.status(404).json({ success: false, message: "Account not found" });
   }
 
-  return ok(res, toPublicAccount(updated), "Phone number updated");
+  return ok(res, toPublicAccount(updated), "Account updated");
 }
 
 export async function uploadImage(req, res) {
   const accountId = resolveAccountId(req);
-  const imageUrl = req.file?.originalname
-    ? `/uploads/accounts/${accountId}/${req.file.originalname}`
+  const file = getUploadedFile(req);
+  const imageUrl = file?.originalname
+    ? `/uploads/accounts/${accountId}/${file.originalname}`
     : req.body?.avatarUrl || "";
 
   const updated = await updateById("accounts", accountId, { avatarUrl: imageUrl });

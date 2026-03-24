@@ -1,5 +1,5 @@
 export function subscribe(req, res) {
-  const { userId } = req.params;
+  const userId = req.query.userId || req.context.accountId;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache, no-transform");

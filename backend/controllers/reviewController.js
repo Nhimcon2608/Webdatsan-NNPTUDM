@@ -1,15 +1,18 @@
 import { created, ok } from "../utils/response.js";
 import { insert, list, updateById } from "../utils/store.js";
 
-export async function getReviewsByBranch(req, res) {
-  const { branchId } = req.params;
-  const rows = (await list("reviews")).filter((item) => item.branchId === branchId);
-  return ok(res, rows);
-}
+export async function getReviews(req, res) {
+  const { branchId, scope } = req.query;
+  let rows = await list("reviews");
 
-export async function getReviewsByUser(req, res) {
-  const accountId = req.context.accountId;
-  const rows = (await list("reviews")).filter((item) => item.accountId === accountId);
+  if (branchId) {
+    rows = rows.filter((item) => item.branchId === branchId);
+  }
+
+  if (scope === "current") {
+    rows = rows.filter((item) => item.accountId === req.context.accountId);
+  }
+
   return ok(res, rows);
 }
 

@@ -1,9 +1,14 @@
 import { created, ok } from "../utils/response.js";
 import { insert, list, updateById } from "../utils/store.js";
 
-export async function getVouchersByBranch(req, res) {
-  const { branchId } = req.params;
-  const rows = (await list("vouchers")).filter((item) => item.branchId === branchId);
+export async function getVouchers(req, res) {
+  const { branchId } = req.query;
+  let rows = await list("vouchers");
+
+  if (branchId) {
+    rows = rows.filter((item) => item.branchId === branchId);
+  }
+
   return ok(res, rows);
 }
 
@@ -17,29 +22,15 @@ export async function createVoucher(req, res) {
 
 export async function updateVoucher(req, res) {
   const { voucherId } = req.params;
-  const updated = await updateById("vouchers", voucherId, req.body || {});
+  const payload = { ...(req.body || {}) };
+  if (payload.status) {
+    payload.status = String(payload.status).toUpperCase();
+  }
 
+  const updated = await updateById("vouchers", voucherId, payload);
   if (!updated) {
     return res.status(404).json({ success: false, message: "Voucher not found" });
   }
 
   return ok(res, updated, "Voucher updated");
-}
-
-export async function toggleVoucher(req, res) {
-  const voucherId = req.query.voucherId;
-  const status = req.query.status;
-
-  if (!voucherId || !status) {
-    return res.status(400).json({ success: false, message: "voucherId and status are required" });
-  }
-
-  const updated = await updateById("vouchers", voucherId, {
-    status: String(status).toUpperCase(),
-  });
-  if (!updated) {
-    return res.status(404).json({ success: false, message: "Voucher not found" });
-  }
-
-  return ok(res, updated, "Voucher status updated");
 }

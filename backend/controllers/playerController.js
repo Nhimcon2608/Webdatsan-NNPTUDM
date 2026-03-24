@@ -1,8 +1,8 @@
 import { ok } from "../utils/response.js";
 import { insert, list, updateById } from "../utils/store.js";
 
-export async function getPlayerByAccountId(req, res) {
-  const { accountId } = req.params;
+export async function getCurrentPlayer(req, res) {
+  const accountId = req.context.accountId;
   const player = (await list("players")).find((item) => item.accountId === accountId);
 
   if (!player) {
@@ -12,9 +12,9 @@ export async function getPlayerByAccountId(req, res) {
   return ok(res, player);
 }
 
-export async function updatePlayer(req, res) {
+export async function updateCurrentPlayer(req, res) {
   const payload = req.body || {};
-  const accountId = payload.accountId || req.context.accountId;
+  const accountId = req.context.accountId;
 
   const existing = (await list("players")).find((item) => item.accountId === accountId);
   if (!existing) {

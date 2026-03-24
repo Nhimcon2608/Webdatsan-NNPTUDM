@@ -4,7 +4,9 @@ const reviewService = {
 
     getAllReviewsOfBranch: async (branchId) => {
         try {
-            const response = await apiClient.get(`/reviews/branch/${branchId}`);
+            const response = await apiClient.get(`/reviews`, {
+                params: { branchId },
+            });
             return response.data;
         } catch (error) {
             console.error('Error fetching branch reviews:', error);
@@ -14,7 +16,9 @@ const reviewService = {
 
     getAllReviewsOfUser: async () => {
         try {
-            const response = await apiClient.get(`/reviews/user`);
+            const response = await apiClient.get(`/reviews`, {
+                params: { scope: "current" },
+            });
             return response.data;
         } catch (error) {
             console.error('Error fetching branch reviews:', error);
@@ -35,7 +39,7 @@ const reviewService = {
     
     putReview: async (id, review) => {
         try {
-            const response = await apiClient.put(`/reviews/${id}`, review)
+            const response = await apiClient.patch(`/reviews/${id}`, review)
             return response.data;
 
         } catch (error) {

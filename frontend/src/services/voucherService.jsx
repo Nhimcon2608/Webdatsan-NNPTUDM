@@ -8,7 +8,9 @@ import {
 const voucherService = {
     getAllVouchersOfBranch: async (branchId) => {
         try {
-            const response = await apiClient.get(`/vouchers/branch/${branchId}`);
+            const response = await apiClient.get(`/vouchers`, {
+                params: { branchId },
+            });
             return normalizeVoucherList(unwrapApiData(response));
         } catch (error) {
             console.error("Error fetching branch reviews:", error);
@@ -31,7 +33,7 @@ const voucherService = {
 
     updateVoucher: async (voucherId, voucherData, token) => {
         try {
-            const response = await apiClient.put(
+            const response = await apiClient.patch(
                 `/vouchers/${voucherId}`,
                 voucherData,
                 {
@@ -52,8 +54,8 @@ const voucherService = {
     toggleVoucherAvailability: async (voucherId, status, token) => {
         try {
             const response = await apiClient.patch(
-                `/vouchers/enable?voucherId=${voucherId}&status=${status}`,
-                {},
+                `/vouchers/${voucherId}`,
+                { status },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             const voucher = normalizeVoucher(unwrapApiData(response));

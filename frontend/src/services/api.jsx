@@ -2,6 +2,25 @@ import axios from "axios";
 import NProgress from "nprogress";
 import "nprogress/nprogress.css"
 
+function buildApiBaseUrl(baseUrl) {
+	const normalizedBase = String(baseUrl || "").trim();
+	if (!normalizedBase) {
+		return "/api";
+	}
+
+	try {
+		const url = new URL(normalizedBase);
+		const pathname = url.pathname.replace(/\/+$/, "");
+		url.pathname = pathname.endsWith("/api")
+			? pathname || "/api"
+			: `${pathname}/api`.replace(/\/+/g, "/");
+		return url.toString().replace(/\/$/, "");
+	} catch {
+		const base = normalizedBase.replace(/\/+$/, "");
+		return base.endsWith("/api") ? base : `${base}/api`;
+	}
+}
+
 let requestCount = 0;
 
 function startProgress() {
@@ -19,8 +38,10 @@ function stopProgress() {
 	}
 }
 
+export const apiBaseUrl = buildApiBaseUrl(import.meta.env.VITE_API_URL);
+
 const apiClient = axios.create({
-	baseURL: import.meta.env.VITE_API_URL,
+	baseURL: apiBaseUrl,
 	// timeout: 10000,
 	headers: {
 		"Content-Type": "application/json",

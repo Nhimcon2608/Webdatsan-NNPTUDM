@@ -2,16 +2,14 @@ import { Router } from "../utils/router.js";
 
 import {
   createVoucher,
-  getVouchersByBranch,
-  toggleVoucher,
+  getVouchers,
   updateVoucher,
 } from "../controllers/voucherController.js";
 
 const router = Router();
 
-router.get("/branch/:branchId", getVouchersByBranch);
+router.get("/", getVouchers);
 router.post("/", createVoucher);
-router.put("/:voucherId", updateVoucher);
-router.patch("/enable", toggleVoucher);
+router.patch("/:voucherId", updateVoucher);
 
 export default router;

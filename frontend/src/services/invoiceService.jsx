@@ -26,7 +26,8 @@ const invoiceService = {
 	// Lấy danh sách hóa đơn theo chi nhánh
 	getInvoicesByBranch: async (branchId, token) => {
 		try {
-			const response = await apiClient.get(`/payments/branch/${branchId}`, {
+			const response = await apiClient.get(`/payments`, {
+				params: { branchId },
 				headers: { Authorization: `Bearer ${token}` },
 			});
 			return normalizePaymentList(unwrapApiData(response));
@@ -41,8 +42,8 @@ const invoiceService = {
 	// Cập nhật trạng thái thanh toán (PAID, PENDING,...)
 	updatePaymentStatus: async (invoiceId, status, token) => {
 		try {
-			const response = await apiClient.put(
-				`/payments/${invoiceId}/status`,
+			const response = await apiClient.patch(
+				`/payments/${invoiceId}`,
 				{ paymentStatus: status }, // ✅ sửa ở đây
 				{
 					headers: {
@@ -62,10 +63,11 @@ const invoiceService = {
 
 	getInvoiceByReservationId: async (reservationId, token) => {
 		try {
-			const response = await apiClient.get(`/payments/reservation/${reservationId}`, {
+			const response = await apiClient.get(`/payments`, {
+				params: { reservationId },
 				headers: { Authorization: `Bearer ${token}` },
 			});
-			return normalizePayment(unwrapApiData(response));
+			return normalizePayment((unwrapApiData(response) || [])[0] || null);
 		} catch (error) {
 			if (error.response?.status === 404) {
 				return null;

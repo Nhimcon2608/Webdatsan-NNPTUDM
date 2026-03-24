@@ -9,7 +9,7 @@ import {
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.post("/", upload.any(), uploadCourtImage);
+router.post("/:badmintonCourtId/images", upload.single("file"), uploadCourtImage);
 router.delete("/:badmintonCourtId/images/:imageId", deleteCourtImage);
 
 export default router;

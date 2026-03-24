@@ -11,6 +11,16 @@ function toDateOnly(value) {
   return String(value || "").slice(0, 10);
 }
 
+function sortReservations(rows, sort) {
+  if (sort === "-createdAt") {
+    rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  if (sort === "createdAt") {
+    rows.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+}
+
 async function loadReservationContext() {
   const [accounts, players, reservationDetails] = await Promise.all([
     list("accounts"),
@@ -30,26 +40,40 @@ async function serializeReservations(rows) {
   return rows.map((row) => serializeReservation(row, context));
 }
 
-export async function getAllReservations(_req, res) {
-  return ok(res, await serializeReservations(await list("reservations")));
-}
+export async function getReservations(req, res) {
+  const {
+    branchId,
+    date,
+    from,
+    to,
+    status,
+    userScope,
+    excludeCancelled,
+    sort,
+  } = req.query;
 
-export async function getReservationsByBranchAndDate(req, res) {
-  const { branchId, date } = req.params;
-  const rows = (await list("reservations")).filter(
-    (item) =>
-      item.branchId === branchId &&
-      toDateOnly(item.bookDate || item.bookAt) === toDateOnly(date) &&
-      !isCancelledStatus(item.status),
-  );
-  return ok(res, await serializeReservations(rows));
-}
+  let rows = [...(await list("reservations"))];
 
-export async function getReservationsByBranch(req, res) {
-  const { branchId } = req.params;
-  const { from, to } = req.query;
+  if (branchId) {
+    rows = rows.filter((item) => item.branchId === branchId);
+  }
 
-  let rows = (await list("reservations")).filter((item) => item.branchId === branchId);
+  if (userScope === "current") {
+    rows = rows.filter((item) => item.userAccountId === req.context.accountId);
+  }
+
+  if (status) {
+    rows = rows.filter(
+      (item) =>
+        normalizeReservationStatus(item.status) === normalizeReservationStatus(status),
+    );
+  }
+
+  if (date) {
+    rows = rows.filter(
+      (item) => toDateOnly(item.bookDate || item.bookAt) === toDateOnly(date),
+    );
+  }
 
   if (from && to) {
     const fromDate = toDateOnly(from);
@@ -60,13 +84,11 @@ export async function getReservationsByBranch(req, res) {
     });
   }
 
-  rows = rows.filter((item) => !isCancelledStatus(item.status));
-  return ok(res, await serializeReservations(rows));
-}
+  if (excludeCancelled === "true") {
+    rows = rows.filter((item) => !isCancelledStatus(item.status));
+  }
 
-export async function getAllReservationsByBranch(req, res) {
-  const { branchId } = req.params;
-  const rows = (await list("reservations")).filter((item) => item.branchId === branchId);
+  sortReservations(rows, sort);
   return ok(res, await serializeReservations(rows));
 }
 
@@ -77,19 +99,6 @@ export async function getReservationById(req, res) {
   }
   const context = await loadReservationContext();
   return ok(res, serializeReservation(row, context));
-}
-
-export async function getReservationsByUserStatus(req, res) {
-  const { status } = req.params;
-  const accountId = req.context.accountId;
-
-  const rows = (await list("reservations")).filter(
-    (item) =>
-      item.userAccountId === accountId &&
-      normalizeReservationStatus(item.status) === normalizeReservationStatus(status),
-  );
-
-  return ok(res, await serializeReservations(rows));
 }
 
 export async function createReservation(req, res) {
@@ -105,19 +114,14 @@ export async function createReservation(req, res) {
   return created(res, serializeReservation(createdRow, context), "Reservation created");
 }
 
-export async function cancelReservation(req, res) {
-  const { reservationId } = req.params;
-  const updated = await updateById("reservations", reservationId, { status: "CANCELLED" });
-  if (!updated) {
-    return res.status(404).json({ success: false, message: "Reservation not found" });
-  }
-  const context = await loadReservationContext();
-  return ok(res, serializeReservation(updated, context), "Reservation cancelled");
-}
-
 export async function updateReservation(req, res) {
   const { reservationId } = req.params;
-  const updated = await updateById("reservations", reservationId, req.body || {});
+  const payload = { ...(req.body || {}) };
+  if (payload.status) {
+    payload.status = String(payload.status).toUpperCase();
+  }
+
+  const updated = await updateById("reservations", reservationId, payload);
   if (!updated) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
@@ -125,80 +129,44 @@ export async function updateReservation(req, res) {
   return ok(res, serializeReservation(updated, context), "Reservation updated");
 }
 
-export async function scheduleCancellationById(req, res) {
-  const { reservationId } = req.params;
-  const updated = await updateById("reservations", reservationId, { status: "SCHEDULED_CANCEL" });
-  if (!updated) {
-    return res.status(404).json({ success: false, message: "Reservation not found" });
+export async function bulkUpdateReservations(req, res) {
+  const reservationIds = Array.isArray(req.body?.reservationIds) ? req.body.reservationIds : [];
+  const status = req.body?.status;
+
+  if (!reservationIds.length) {
+    return res.status(400).json({ success: false, message: "reservationIds is required" });
   }
-  const context = await loadReservationContext();
-  return ok(res, serializeReservation(updated, context), "Reservation scheduled for cancellation");
-}
-
-export async function scheduleCancellationBulk(req, res) {
-  const input = req.body;
-  const reservationIds = Array.isArray(input)
-    ? input
-    : Array.isArray(input?.reservationIds)
-      ? input.reservationIds
-      : [];
-
-  const updatedRows = (
-    await Promise.all(
-      reservationIds.map((id) =>
-        updateById("reservations", String(id), { status: "SCHEDULED_CANCEL" }),
-      ),
-    )
-  ).filter(Boolean);
-
-  return ok(res, await serializeReservations(updatedRows), "Bulk cancellation scheduled");
-}
-
-export async function getLatestReservations(req, res) {
-  const { branchId } = req.query;
-
-  let rows = [...(await list("reservations"))];
-  if (branchId) {
-    rows = rows.filter((item) => item.branchId === branchId);
-  }
-
-  rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  return ok(res, await serializeReservations(rows));
-}
-
-export async function updateReservationStatus(req, res) {
-  const { reservationId } = req.params;
-  const { status } = req.body || {};
 
   if (!status) {
     return res.status(400).json({ success: false, message: "status is required" });
   }
 
-  const updated = await updateById("reservations", reservationId, {
-    status: String(status).toUpperCase(),
-  });
-  if (!updated) {
-    return res.status(404).json({ success: false, message: "Reservation not found" });
-  }
+  const updatedRows = (
+    await Promise.all(
+      reservationIds.map((id) =>
+        updateById("reservations", String(id), { status: String(status).toUpperCase() }),
+      ),
+    )
+  ).filter(Boolean);
 
-  const context = await loadReservationContext();
-  return ok(res, serializeReservation(updated, context), "Reservation status updated");
+  return ok(res, await serializeReservations(updatedRows), "Reservations updated");
 }
 
-export async function sendReservationNotification(req, res) {
+export async function createReservationNotification(req, res) {
   const { reservationId } = req.params;
   const row = await findById("reservations", reservationId);
   if (!row) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
 
-  return ok(
+  return created(
     res,
     {
+      id: `reservation-notification-${Date.now()}`,
       reservationId,
-      notifiedAt: new Date().toISOString(),
-      target: "manager",
+      createdAt: new Date().toISOString(),
+      target: req.body?.target || "manager",
     },
-    "Notification queued",
+    "Reservation notification queued",
   );
 }
