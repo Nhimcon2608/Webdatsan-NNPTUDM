@@ -12,8 +12,12 @@ import {
     Paper,
     Dialog,
     DialogContent,
+    InputAdornment,
+    IconButton,
 } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 
 const StyledDialog = styled(Dialog)(({ theme }) => ({
     '& .MuiDialog-container': {
@@ -112,6 +116,9 @@ const LoginModal = ({
     const [fieldErrors, setFieldErrors] = useState({});
     const [generalError, setGeneralError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showLoginPassword, setShowLoginPassword] = useState(false);
+    const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const [isExiting, setIsExiting] = useState(false);
 
@@ -135,6 +142,10 @@ const LoginModal = ({
 
     const handleRegisterChange = (e) => {
         setRegisterData({ ...registerData, [e.target.name]: e.target.value });
+    };
+
+    const handleMouseDownPassword = (event) => {
+        event.preventDefault();
     };
 
     const validateLoginForm = () => {
@@ -282,7 +293,7 @@ const LoginModal = ({
                             fullWidth
                             label="Mật khẩu"
                             variant="outlined"
-                            type="password"
+                            type={showLoginPassword ? 'text' : 'password'}
                             name="password"
                             value={loginData.password}
                             onChange={handleLoginChange}
@@ -290,6 +301,24 @@ const LoginModal = ({
                             error={!!fieldErrors.password}
                             helperText={fieldErrors.password}
                             disabled={isLoading}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            edge="end"
+                                            onClick={() => setShowLoginPassword((prev) => !prev)}
+                                            onMouseDown={handleMouseDownPassword}
+                                            aria-label={showLoginPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                                        >
+                                            {showLoginPassword ? (
+                                                <VisibilityOffOutlinedIcon />
+                                            ) : (
+                                                <VisibilityOutlinedIcon />
+                                            )}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
                         <StyledButton
                             variant="contained"
@@ -338,7 +367,7 @@ const LoginModal = ({
                             fullWidth
                             label="Mật khẩu"
                             variant="outlined"
-                            type="password"
+                            type={showRegisterPassword ? 'text' : 'password'}
                             name="password"
                             value={registerData.password}
                             onChange={handleRegisterChange}
@@ -346,12 +375,30 @@ const LoginModal = ({
                             error={!!fieldErrors.password}
                             helperText={fieldErrors.password}
                             disabled={isLoading}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            edge="end"
+                                            onClick={() => setShowRegisterPassword((prev) => !prev)}
+                                            onMouseDown={handleMouseDownPassword}
+                                            aria-label={showRegisterPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                                        >
+                                            {showRegisterPassword ? (
+                                                <VisibilityOffOutlinedIcon />
+                                            ) : (
+                                                <VisibilityOutlinedIcon />
+                                            )}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
                         <StyledTextField
                             fullWidth
                             label="Xác nhận mật khẩu"
                             variant="outlined"
-                            type="password"
+                            type={showConfirmPassword ? 'text' : 'password'}
                             name="confirmPassword"
                             value={registerData.confirmPassword}
                             onChange={handleRegisterChange}
@@ -359,6 +406,24 @@ const LoginModal = ({
                             error={!!fieldErrors.confirmPassword}
                             helperText={fieldErrors.confirmPassword}
                             disabled={isLoading}
+                            InputProps={{
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            edge="end"
+                                            onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                            onMouseDown={handleMouseDownPassword}
+                                            aria-label={showConfirmPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                                        >
+                                            {showConfirmPassword ? (
+                                                <VisibilityOffOutlinedIcon />
+                                            ) : (
+                                                <VisibilityOutlinedIcon />
+                                            )}
+                                        </IconButton>
+                                    </InputAdornment>
+                                ),
+                            }}
                         />
                         <StyledButton
                             variant="contained"

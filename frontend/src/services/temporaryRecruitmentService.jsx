@@ -38,11 +38,23 @@ const temporaryRecruitmentService = {
                 rows = rows.filter((item) => Number(item.quantity || 0) <= Number(params.quantityMax));
             }
 
-            if (params?.sortDirection === "ASC") {
-                rows = [...rows].sort((a, b) => new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime());
-            } else {
-                rows = [...rows].sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
-            }
+            const sortField = params?.sortBy === "reservation.bookAt" ? "bookAt" : "createdAt";
+            rows = [...rows].sort((a, b) => {
+                const leftDate = new Date(
+                    sortField === "bookAt"
+                        ? (a.bookAt || a.bookDate || 0)
+                        : (a.createAt || a.createdAt || 0)
+                ).getTime();
+                const rightDate = new Date(
+                    sortField === "bookAt"
+                        ? (b.bookAt || b.bookDate || 0)
+                        : (b.createAt || b.createdAt || 0)
+                ).getTime();
+
+                return params?.sortDirection === "ASC"
+                    ? leftDate - rightDate
+                    : rightDate - leftDate;
+            });
 
             const page = Number(params?.page || 0);
             const size = Number(params?.size || rows.length || 1);

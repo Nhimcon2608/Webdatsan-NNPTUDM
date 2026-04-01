@@ -193,18 +193,16 @@ const BookingDetail = forwardRef(({
         try {
             if (editingIndex === null) {
                 const res = await temporaryRecruitmentService.create(payload);
-                console.log('payload: ', payload);
-                // if (res) {
-                //     setRecruitments(prev => [...prev, res.data]);
-                // }
-                setRecruitments(prev => [...prev, payload]);
+                if (res) {
+                    setRecruitments(prev => [...prev, { ...res, available: Boolean(res.available) }]);
+                }
             } else {
                 const res = await temporaryRecruitmentService.update(recruitments[editingIndex].id, payload)
-                console.log('payload: ', payload);
-                // if (res) { ... }
                 setRecruitments(prev => {
                     const updated = [...prev];
-                    updated[editingIndex] = { ...updated[editingIndex], ...payload };
+                    updated[editingIndex] = res
+                        ? { ...res, available: Boolean(res.available) }
+                        : { ...updated[editingIndex], ...payload };
                     return updated;
                 });
             }

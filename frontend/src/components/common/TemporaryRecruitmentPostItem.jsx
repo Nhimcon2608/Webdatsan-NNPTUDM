@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     Card,
     CardHeader,
@@ -26,6 +26,7 @@ import { stringToColor } from '../../utils/stringToColor';
 import temporaryRecruitmentSavedService from "../../services/temporaryRecruitmentSavedService";
 import authService from "../../services/authService";
 import { useSnackbar } from "../../../context/SnackbarContext";
+import { useAuth } from "../../../context/AuthContext";
 
 
 const TemporaryRecruitmentPostItem = ({
@@ -39,6 +40,7 @@ const TemporaryRecruitmentPostItem = ({
 }) => {
 
     const { showSnackbar } = useSnackbar();
+    const { login } = useAuth();
 
     const [saved, setSaved] = useState(isSaved);
     const [registration, setRegistration] = useState(isRegistration);
@@ -46,23 +48,42 @@ const TemporaryRecruitmentPostItem = ({
     const [openRegistrationConfirmModal, setOpenRegistrationConfirmModal] = useState(false);
     const [openShare, setOpenShare] = useState(false);
 
-    // console.log("isSaved: ", isSaved);
-    // console.log("isRegistration: ", isRegistration);
+    useEffect(() => {
+        setSaved(isSaved);
+    }, [isSaved]);
 
-    const handleBookmark = async (e) => {
+    useEffect(() => {
+        setRegistration(isRegistration);
+    }, [isRegistration]);
+
+    const recruitmentId = item?.id || item?.temporaryRecruitmentId;
+    const displayName = item?.username || "Người chơi";
+    const recruitmentQuantity = Number(item?.quantity || 0);
+    const createAt = item?.createAt || item?.createdAt;
+    const branchName = item?.branchName || "Chưa cập nhật";
+    const shareUrl = recruitmentId
+        ? `${window.location.origin}/share/temporary-recruitment/${recruitmentId}`
+        : window.location.origin;
+
+    const handleBookmark = async () => {
+        if (!recruitmentId) {
+            showSnackbar("Không tìm thấy mã tin tuyển vãng lai", "error");
+            return;
+        }
+
         if (!user) {
             setOpenLoginModal(true);
             return;
         }
 
         if (saved) {
-            await temporaryRecruitmentSavedService.unSaved(item.id);
+            await temporaryRecruitmentSavedService.unSaved(recruitmentId);
             setSaved(false);
             if (onUnsaveSuccess) {
                 onUnsaveSuccess();
             }
         } else {
-            const res = await temporaryRecruitmentSavedService.save(item.id);
+            const res = await temporaryRecruitmentSavedService.save(recruitmentId);
 
             if (res) {
                 setSaved(true);
@@ -71,7 +92,12 @@ const TemporaryRecruitmentPostItem = ({
 
     };
 
-    const handleRegistion = (e) => {
+    const handleRegistion = () => {
+        if (!recruitmentId) {
+            showSnackbar("Không tìm thấy mã tin tuyển vãng lai", "error");
+            return;
+        }
+
         if (!user) {
             setOpenLoginModal(true);
             return;
@@ -86,7 +112,7 @@ const TemporaryRecruitmentPostItem = ({
 
     const handleLoginSuccess = async (response) => {
         localStorage.setItem("authToken", response.token);
-        const userLogged = await login();
+        await login();
         setOpenLoginModal(false);
     };
 
@@ -95,13 +121,9 @@ const TemporaryRecruitmentPostItem = ({
         showSnackbar("Đăng ký thành công", "success");
     };
 
-    const shareUrl = `${window.location.origin}/share/temporary-recruitment/${item.id}`;
-    // console.log("shareUrl: ", shareUrl);
-
     return (
         <>
             <Card
-                key={item.id}
                 sx={{
                     borderRadius: 2,
                     boxShadow: 1,
@@ -112,32 +134,32 @@ const TemporaryRecruitmentPostItem = ({
                     },
                     transition: "all 0.2s ease-in-out"
                 }}
-                onClick={() => handleOpenDetail(item)}
+                onClick={() => handleOpenDetail?.(item)}
             >
                 <CardHeader
                     avatar={
-                        item.imagePath ? (
+                        item?.imagePath ? (
                             <Avatar
                                 src={`${import.meta.env.VITE_API_URL}/${item.imagePath}`}
-                                alt={item.username}
+                                alt={displayName}
                                 sx={{ width: 40, height: 40 }}
                             />
                         ) : (
                             <Avatar
-                                sx={{ width: 40, height: 40, bgcolor: stringToColor(item.username) }}
+                                sx={{ width: 40, height: 40, bgcolor: stringToColor(displayName) }}
                             >
-                                {item.username?.charAt(0).toUpperCase()}
+                                {displayName.charAt(0).toUpperCase()}
                             </Avatar>
                         )
                     }
                     title={
                         <Typography fontWeight={600} variant="subtitle1">
-                            {item.username}
+                            {displayName}
                         </Typography>
                     }
                     subheader={
                         <Typography variant="caption" color="text.secondary">
-                            Ngày đăng: {formatDateForDisplay(item.createAt)}
+                            Ngày đăng: {formatDateForDisplay(createAt)}
                         </Typography>
                     }
                 />
@@ -157,7 +179,7 @@ const TemporaryRecruitmentPostItem = ({
                         <EventIcon sx={{ mr: 1, color: theme.palette.primary.main }} />
                         <Box>
                             <Typography variant="body2" fontWeight={600} sx={{ color: theme.palette.primary.main }}>
-                                Ngày tuyển: {formatDateOnly(item.bookAt)}
+                                Ngày tuyển: {formatDateOnly(item?.bookAt)}
                             </Typography>
                         </Box>
                     </Box>
@@ -179,16 +201,16 @@ const TemporaryRecruitmentPostItem = ({
                                 Đia điểm:
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                {item.branchName}
+                                {branchName}
                             </Typography>
                         </Box>
                     </Box>
 
                     <Typography variant="body1" sx={{ mb: 1 }}>
-                        Số lượng tuyển: <strong>{item.quantity}</strong>
+                        Số lượng tuyển: <strong>{recruitmentQuantity}</strong>
                     </Typography>
                     <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                        {item.content}
+                        {item?.content || "Chưa có nội dung mô tả."}
                     </Typography>
                 </CardContent>
 
@@ -207,7 +229,7 @@ const TemporaryRecruitmentPostItem = ({
                         {saved ? <BookmarkIcon /> : <BookmarkBorderIcon />}
                     </IconButton>
                         
-                    {item.username !== user?.username && (
+                    {displayName !== user?.username && (
                         <Button
                             variant="contained"
                             startIcon={registration ? <CheckIcon /> : <WorkIcon />}
@@ -230,7 +252,7 @@ const TemporaryRecruitmentPostItem = ({
                     )}
 
                     <IconButton
-                        color="theme.palette.primary.main"
+                        color="primary"
                         size="small"
                         onClick={(e) => {
                             e.stopPropagation();
