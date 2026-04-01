@@ -11,6 +11,11 @@ import { attachRequestContext } from "./utils/requestContext.js";
 dotenv.config();
 
 const app = express();
+const API_BASE_PATH = String(process.env.API_BASE_PATH || "/api").replace(/\/+$/, "");
+const API_VERSION = String(process.env.API_VERSION || "v1")
+  .replace(/^\/+/, "")
+  .replace(/\/+$/, "");
+const API_PREFIX = API_VERSION ? `${API_BASE_PATH}/${API_VERSION}` : API_BASE_PATH;
 
 function healthHandler(_req, res) {
   res.json({
@@ -28,8 +33,9 @@ app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(attachRequestContext);
 
 app.get("/health", healthHandler);
-app.get("/api/health", healthHandler);
-app.use("/api", routes);
+app.get(`${API_BASE_PATH}/health`, healthHandler);
+app.get(`${API_PREFIX}/health`, healthHandler);
+app.use(API_PREFIX, routes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 

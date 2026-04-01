@@ -31,3 +31,6 @@ bcb-backend/uploads/
 
 # Docker dev files
 Dockerfile.dev
+
+# AGENTS.md
+AGENTS.md

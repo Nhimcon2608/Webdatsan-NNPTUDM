@@ -7,13 +7,14 @@ import {
   getReservationById,
   updateReservation,
 } from "../controllers/reservationController.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
 router.get("/", getReservations);
-router.post("/", createReservation);
+router.post("/", requireAuth, createReservation);
 router.get("/:reservationId", getReservationById);
-router.patch("/:reservationId", updateReservation);
-router.post("/:reservationId/notifications", createReservationNotification);
+router.patch("/:reservationId", requireAuth, updateReservation);
+router.post("/:reservationId/notifications", requireAuth, createReservationNotification);
 
 export default router;

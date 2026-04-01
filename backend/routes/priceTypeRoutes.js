@@ -6,12 +6,13 @@ import {
   getAllPriceTypes,
   getPriceTypeById,
 } from "../controllers/priceTypeController.js";
+import { requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
 router.get("/", getAllPriceTypes);
-router.post("/", createPriceType);
+router.post("/", requireRoles("ADMIN"), createPriceType);
 router.get("/:id", getPriceTypeById);
-router.delete("/:id", deletePriceType);
+router.delete("/:id", requireRoles("ADMIN"), deletePriceType);
 
 export default router;

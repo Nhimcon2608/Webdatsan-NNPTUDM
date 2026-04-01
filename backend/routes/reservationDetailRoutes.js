@@ -4,10 +4,11 @@ import {
   createReservationDetail,
   getReservationDetails,
 } from "../controllers/reservationDetailController.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
 router.get("/", getReservationDetails);
-router.post("/", createReservationDetail);
+router.post("/", requireAuth, createReservationDetail);
 
 export default router;

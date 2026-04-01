@@ -4,13 +4,14 @@ import {
 	normalizePaymentList,
 	unwrapApiData,
 } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 const invoiceService = {
 	// Tạo hóa đơn mới
 	createInvoice: async (reservationId, token) => {
 		try {
 			const response = await apiClient.post(
-				"/payments",
+				apiRoutes.payments.root,
 				{ reservationId },
 				{
 					headers: { Authorization: `Bearer ${token}` },
@@ -26,7 +27,7 @@ const invoiceService = {
 	// Lấy danh sách hóa đơn theo chi nhánh
 	getInvoicesByBranch: async (branchId, token) => {
 		try {
-			const response = await apiClient.get(`/payments`, {
+			const response = await apiClient.get(apiRoutes.payments.root, {
 				params: { branchId },
 				headers: { Authorization: `Bearer ${token}` },
 			});
@@ -43,7 +44,7 @@ const invoiceService = {
 	updatePaymentStatus: async (invoiceId, status, token) => {
 		try {
 			const response = await apiClient.patch(
-				`/payments/${invoiceId}`,
+				apiRoutes.payments.byId(invoiceId),
 				{ paymentStatus: status }, // ✅ sửa ở đây
 				{
 					headers: {
@@ -63,7 +64,7 @@ const invoiceService = {
 
 	getInvoiceByReservationId: async (reservationId, token) => {
 		try {
-			const response = await apiClient.get(`/payments`, {
+			const response = await apiClient.get(apiRoutes.payments.root, {
 				params: { reservationId },
 				headers: { Authorization: `Bearer ${token}` },
 			});

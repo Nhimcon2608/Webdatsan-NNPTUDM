@@ -1,11 +1,12 @@
 import apiClient from './api';
 import { unwrapApiData } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 const temporaryRecruitmentService = {
 
     getAll: async () => {
         try {
-            const response = await apiClient.get('/temporary-recruitments');
+            const response = await apiClient.get(apiRoutes.temporaryRecruitments.root);
             return unwrapApiData(response);
         } catch (error) {
             console.error('Error fetching all temporary recruitments:', error);
@@ -15,7 +16,7 @@ const temporaryRecruitmentService = {
 
     getPaginated: async (params) => {
         try {
-            const response = await apiClient.get('/temporary-recruitments', {
+            const response = await apiClient.get(apiRoutes.temporaryRecruitments.root, {
                 params: {
                     available: params?.status,
                 },
@@ -67,7 +68,7 @@ const temporaryRecruitmentService = {
 
     getById: async (id) => {
         try {
-            const response = await apiClient.get(`/temporary-recruitments/${id}`);
+            const response = await apiClient.get(apiRoutes.temporaryRecruitments.byId(id));
             return unwrapApiData(response);
         }
         catch (error) {
@@ -78,7 +79,7 @@ const temporaryRecruitmentService = {
 
     getFullInforById: async (id) => {
         try {
-            const response = await apiClient.get(`/temporary-recruitments/${id}`, {
+            const response = await apiClient.get(apiRoutes.temporaryRecruitments.byId(id), {
                 params: { include: "full" },
             });
             return unwrapApiData(response);
@@ -91,7 +92,7 @@ const temporaryRecruitmentService = {
 
     getByReservation: async (id) => {
         try {
-            const response = await apiClient.get(`/temporary-recruitments`, {
+            const response = await apiClient.get(apiRoutes.temporaryRecruitments.root, {
                 params: { reservationId: id },
             });
             return unwrapApiData(response);
@@ -104,7 +105,7 @@ const temporaryRecruitmentService = {
 
     create: async (request) => {
         try {
-            const response = await apiClient.post(`/temporary-recruitments`, request);
+            const response = await apiClient.post(apiRoutes.temporaryRecruitments.root, request);
             return unwrapApiData(response);
         }
         catch (error) {
@@ -115,7 +116,7 @@ const temporaryRecruitmentService = {
 
     changeStatus: async (id, available) => {
         try {
-            const response = await apiClient.patch(`/temporary-recruitments/${id}`, { available });
+            const response = await apiClient.patch(apiRoutes.temporaryRecruitments.byId(id), { available });
             return unwrapApiData(response);
         }
         catch (error) {
@@ -126,7 +127,7 @@ const temporaryRecruitmentService = {
 
     update: async (id, request) => {
         try {
-            const response = await apiClient.patch(`/temporary-recruitments/${id}`, request);
+            const response = await apiClient.patch(apiRoutes.temporaryRecruitments.byId(id), request);
             return unwrapApiData(response);
         }
         catch (error) {
@@ -135,7 +136,7 @@ const temporaryRecruitmentService = {
         }
     },
 
-    delete: async (id) => {
+    delete: async () => {
 
     }
 };

@@ -3,8 +3,7 @@ import { findById, insert, list, updateById } from "../utils/store.js";
 import { toPublicAccount } from "../utils/accountView.js";
 
 function resolveAccountId(req) {
-  const accountIdFromBody = req.body?.accountId;
-  return accountIdFromBody || req.context.accountId || "acc-1";
+  return req.context.accountId || null;
 }
 
 function getUploadedFile(req) {

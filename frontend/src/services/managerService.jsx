@@ -1,10 +1,11 @@
 import apiClient from "./api";
 import { normalizeAccount, unwrapApiData } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 const managerService = {
 	uploadAvatar: async (formData) => {
 		try {
-			const response = await apiClient.put('/accounts/current/avatar', formData, {
+			const response = await apiClient.put(apiRoutes.users.avatar, formData, {
 				headers: {
 					'Content-Type': 'multipart/form-data',
 				},

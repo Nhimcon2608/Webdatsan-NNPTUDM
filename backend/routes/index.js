@@ -25,31 +25,31 @@ import voucherRoutes from "./voucherRoutes.js";
 
 const router = Router();
 
-router.use("/sessions", authRoutes);
-router.use("/accounts", accountRoutes);
+router.use("/auth", authRoutes);
+router.use("/users", accountRoutes);
 router.use("/owners", ownerRoutes);
 router.use("/players", playerRoutes);
 
 router.use("/partnership-requests", partnershipRequestRoutes);
 router.use("/branches", branchRoutes);
-router.use("/badminton-courts", badmintonCourtRoutes);
-router.use("/badminton-courts", badmintonCourtImageRoutes);
+router.use("/courts", badmintonCourtRoutes);
+router.use("/courts", badmintonCourtImageRoutes);
 router.use("/prices", priceRoutes);
 router.use("/price-types", priceTypeRoutes);
 
 router.use("/reservations", reservationRoutes);
-router.use("/reservation-details", reservationDetailRoutes);
-router.use("/reservation-status-updates", reservationStatusUpdateRoutes);
-router.use("/fixed-bookings", fixedBookingRoutes);
+router.use("/reservations/details", reservationDetailRoutes);
+router.use("/reservations/status-updates", reservationStatusUpdateRoutes);
+router.use("/reservations/fixed-bookings", fixedBookingRoutes);
 
 router.use("/temporary-recruitments", temporaryRecruitmentRoutes);
-router.use("/temporary-recruitments-saved", temporaryRecruitmentSavedRoutes);
-router.use("/temporary-registrations", temporaryRegistrationRoutes);
+router.use("/temporary-recruitments/saved", temporaryRecruitmentSavedRoutes);
+router.use("/temporary-recruitments/registrations", temporaryRegistrationRoutes);
 
 router.use("/reviews", reviewRoutes);
 router.use("/payments", paymentRoutes);
-router.use("/payment-links", paymentLinkRoutes);
+router.use("/payments/links", paymentLinkRoutes);
 router.use("/vouchers", voucherRoutes);
-router.use("/event-streams", sseRoutes);
+router.use("/notifications", sseRoutes);
 
 export default router;

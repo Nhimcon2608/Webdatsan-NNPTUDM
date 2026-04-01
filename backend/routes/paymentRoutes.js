@@ -5,11 +5,12 @@ import {
   getPayments,
   updatePayment,
 } from "../controllers/paymentController.js";
+import { requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
 router.get("/", getPayments);
-router.post("/", createPayment);
-router.patch("/:paymentId", updatePayment);
+router.post("/", requireRoles("ADMIN", "MANAGER"), createPayment);
+router.patch("/:paymentId", requireRoles("ADMIN", "MANAGER"), updatePayment);
 
 export default router;

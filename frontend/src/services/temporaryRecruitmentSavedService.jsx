@@ -1,11 +1,12 @@
 import apiClient from "./api";
 import { unwrapApiData } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 const temporaryRecruitmentSavedService = {
 
     getAllTemporaryRecruitmentSavedOfUser: async () => {
         try {
-            const response = await apiClient.get('/temporary-recruitments-saved');
+            const response = await apiClient.get(apiRoutes.temporaryRecruitments.saved);
             return unwrapApiData(response);
         } catch (error) {
             console.error('Error fetching all temporary recruitments:', error);
@@ -15,7 +16,7 @@ const temporaryRecruitmentSavedService = {
 
     save: async (temporaryRecruitmentId) => {
         try {
-            const response = await apiClient.post('/temporary-recruitments-saved', {temporaryRecruitmentId});
+            const response = await apiClient.post(apiRoutes.temporaryRecruitments.saved, {temporaryRecruitmentId});
             return unwrapApiData(response);
         } catch (error) {
             console.error('Error fetching all temporary recruitments:', error);
@@ -25,7 +26,7 @@ const temporaryRecruitmentSavedService = {
 
     unSaved: async (temporaryRecruitmentId) => {
         try {
-            const response = await apiClient.delete(`/temporary-recruitments-saved/${temporaryRecruitmentId}`);
+            const response = await apiClient.delete(apiRoutes.temporaryRecruitments.savedById(temporaryRecruitmentId));
             return unwrapApiData(response);
         } catch (error) {
             console.error('Error fetching all temporary recruitments:', error);

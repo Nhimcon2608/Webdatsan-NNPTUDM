@@ -6,12 +6,13 @@ import {
   getTemporaryRecruitmentById,
   updateTemporaryRecruitment,
 } from "../controllers/temporaryRecruitmentController.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
 router.get("/", getAllTemporaryRecruitments);
-router.post("/", createTemporaryRecruitment);
+router.post("/", requireAuth, createTemporaryRecruitment);
 router.get("/:id", getTemporaryRecruitmentById);
-router.patch("/:id", updateTemporaryRecruitment);
+router.patch("/:id", requireAuth, updateTemporaryRecruitment);
 
 export default router;

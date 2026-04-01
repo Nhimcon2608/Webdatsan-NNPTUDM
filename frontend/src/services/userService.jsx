@@ -1,9 +1,10 @@
 import apiClient from './api';
+import { apiRoutes } from './routes';
 
 const UserService = {
     getAccount: async () => {
         try {
-            const response = await apiClient.get('/accounts/current');
+            const response = await apiClient.get(apiRoutes.users.me);
             return response;
         } catch (error) {
             console.error('Error fetching account:', error);
@@ -13,7 +14,7 @@ const UserService = {
 
     getProfile: async (accountId) => {
         try {
-            const response = await apiClient.get(`/players/current`);
+            const response = await apiClient.get(apiRoutes.players.me);
             return response;
         } catch (error) {
             console.error(`Error fetching profile for account ID ${accountId}:`, error);
@@ -23,7 +24,7 @@ const UserService = {
 
     updateProfile: async (userData) => {
         try {
-            const response = await apiClient.put('/players/current', userData);
+            const response = await apiClient.put(apiRoutes.players.me, userData);
             return response;
         } catch (error) {
             console.error('Error updating profile:', error);
@@ -33,7 +34,7 @@ const UserService = {
 
     uploadAvatar: async (formData) => {
         try {
-            const response = await apiClient.put('/accounts/current/avatar', formData, {
+            const response = await apiClient.put(apiRoutes.users.avatar, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },

@@ -1,9 +1,23 @@
 import { created, ok } from "../utils/response.js";
+import { getRequestAccount } from "../middleware/auth.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 
 export async function getPayments(req, res) {
   const { branchId, reservationId, orderId } = req.query;
   let rows = await list("payments");
+
+  if (!orderId) {
+    const account = await getRequestAccount(req);
+    const role = req.context?.role;
+
+    if (!account) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+
+    if (!["ADMIN", "MANAGER"].includes(role)) {
+      return res.status(403).json({ success: false, message: "Forbidden" });
+    }
+  }
 
   if (branchId) {
     rows = rows.filter((item) => item.branchId === branchId);

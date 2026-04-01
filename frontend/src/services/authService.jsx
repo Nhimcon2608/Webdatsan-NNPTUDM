@@ -1,26 +1,27 @@
 import apiClient from "./api";
 import { normalizeAccount, unwrapApiData } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 const authService = {
     login: (loginData) => {
-        return apiClient.post("/sessions", loginData);
+        return apiClient.post(apiRoutes.auth.login, loginData);
     },
 
     changePassword: (formData) => {
-        return apiClient.patch("/accounts/current/password", formData);
+        return apiClient.put(apiRoutes.users.password, formData);
     },
 
     register: (registerData) => {
-        return apiClient.post("/accounts", registerData);
+        return apiClient.post(apiRoutes.auth.register, registerData);
     },
 
     logout: () => {
-        return apiClient.delete("/sessions/current");
+        return apiClient.post(apiRoutes.auth.logout);
     },
 
     getCurrentAccount: async () => {
         try {
-            const response = await apiClient.get("/accounts/current");
+            const response = await apiClient.get(apiRoutes.users.me);
             return normalizeAccount(unwrapApiData(response));
         } catch (error) {
             console.error("Error fetching current account:", error);
@@ -31,7 +32,7 @@ const authService = {
     updatePhoneNumber: async (phoneNumber, token) => {
         try {
             const response = await apiClient.patch(
-                "/accounts/current",
+                apiRoutes.users.me,
                 { phoneNumber },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

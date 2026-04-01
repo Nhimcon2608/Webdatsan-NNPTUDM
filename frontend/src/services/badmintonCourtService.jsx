@@ -1,5 +1,6 @@
 import apiClient from "./api";
 import { normalizeCourt, normalizeCourtList, unwrapApiData } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 function filterCourtsByStatus(courts, status) {
     const normalizedStatus = String(status || "all").trim().toLowerCase();
@@ -27,7 +28,7 @@ const badmintionCourtService = {
             if (status && String(status).toLowerCase() !== "all") {
                 params.status = status;
             }
-            const response = await apiClient.get(`/badminton-courts`, { params });
+            const response = await apiClient.get(apiRoutes.courts.root, { params });
             const courts = normalizeCourtList(unwrapApiData(response));
             return filterCourtsByStatus(courts, status);
         } catch (error) {
@@ -39,7 +40,7 @@ const badmintionCourtService = {
     getByBranchId: async (branchId, token) => {
         try {
             const response = await apiClient.get(
-                `/badminton-courts`,
+                apiRoutes.courts.root,
                 {
                     params: { branchId },
                     headers: { Authorization: `Bearer ${token}` },
@@ -55,7 +56,7 @@ const badmintionCourtService = {
     getCourtsByManager: async (accountId, token) => {
         try {
             const response = await apiClient.get(
-                `/badminton-courts`,
+                apiRoutes.courts.root,
                 {
                     params: { managerAccountId: accountId },
                     headers: { Authorization: `Bearer ${token}` },
@@ -73,7 +74,7 @@ const badmintionCourtService = {
     toggleCourtStatus: async (courtId, token) => {
         try {
             const response = await apiClient.patch(
-                `/badminton-courts/${courtId}`,
+                apiRoutes.courts.byId(courtId),
                 {},
                 {
                     headers: { Authorization: `Bearer ${token}` },
@@ -90,7 +91,7 @@ const badmintionCourtService = {
 
     addCourt: async (request) => {
         try {
-            const response = await apiClient.post(`/badminton-courts`, request);
+            const response = await apiClient.post(apiRoutes.courts.root, request);
             return normalizeCourt(unwrapApiData(response));
         } catch (error) {
             console.error('Error fetching branch reviews:', error);
@@ -101,7 +102,7 @@ const badmintionCourtService = {
     uploadImage: async (formData) => {
         try {
             const courtId = formData.get("badmintonCourtId") || formData.get("courtId");
-            const response = await apiClient.post(`/badminton-courts/${courtId}/images`, formData, {
+            const response = await apiClient.post(apiRoutes.courts.images(courtId), formData, {
                 headers: {
                     "Content-Type": "multipart/form-data"
                 }
@@ -115,7 +116,7 @@ const badmintionCourtService = {
 
     deleteImage: async (badmintonCourtId, imageId) => {
         try {
-            const response = await apiClient.delete(`/badminton-courts/${badmintonCourtId}/images/${imageId}`)
+            const response = await apiClient.delete(apiRoutes.courts.imageById(badmintonCourtId, imageId))
             return unwrapApiData(response);
         } catch (error) {
             console.error('Error fetching delete image:', error);

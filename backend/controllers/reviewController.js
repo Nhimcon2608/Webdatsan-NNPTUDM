@@ -1,4 +1,5 @@
 import { created, ok } from "../utils/response.js";
+import { getRequestAccount } from "../middleware/auth.js";
 import { insert, list, updateById } from "../utils/store.js";
 
 export async function getReviews(req, res) {
@@ -10,6 +11,12 @@ export async function getReviews(req, res) {
   }
 
   if (scope === "current") {
+    const account = await getRequestAccount(req);
+
+    if (!account) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+
     rows = rows.filter((item) => item.accountId === req.context.accountId);
   }
 
