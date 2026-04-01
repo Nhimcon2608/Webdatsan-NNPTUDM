@@ -5,11 +5,12 @@ import {
   saveTemporaryRecruitment,
   unsaveTemporaryRecruitment,
 } from "../controllers/temporaryRecruitmentSavedController.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.get("/", getSavedTemporaryRecruitments);
-router.post("/", saveTemporaryRecruitment);
-router.delete("/:temporaryRecruitmentId", unsaveTemporaryRecruitment);
+router.get("/", requireAuth, getSavedTemporaryRecruitments);
+router.post("/", requireAuth, saveTemporaryRecruitment);
+router.delete("/:temporaryRecruitmentId", requireAuth, unsaveTemporaryRecruitment);
 
 export default router;

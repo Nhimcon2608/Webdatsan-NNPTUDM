@@ -4,10 +4,11 @@ import {
   getTemporaryRegistrations,
   registerTemporaryRecruitment,
 } from "../controllers/temporaryRegistrationController.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.get("/", getTemporaryRegistrations);
-router.post("/", registerTemporaryRecruitment);
+router.get("/", requireAuth, getTemporaryRegistrations);
+router.post("/", requireAuth, registerTemporaryRecruitment);
 
 export default router;

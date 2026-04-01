@@ -1,5 +1,6 @@
 import apiClient from "./api";
 import { normalizeReservation, normalizeReservationList, unwrapApiData } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 async function findFixedBookingIdByReservationIds(reservationIds) {
 	const firstReservationId = reservationIds?.[0];
@@ -7,7 +8,7 @@ async function findFixedBookingIdByReservationIds(reservationIds) {
 		throw new Error("Thiếu reservationIds để tìm fixed booking.");
 	}
 
-	const response = await apiClient.get("/fixed-bookings", {
+	const response = await apiClient.get(apiRoutes.reservations.fixedBookings, {
 		params: { reservationId: firstReservationId },
 	});
 	const fixedBookings = unwrapApiData(response) || [];
@@ -25,7 +26,7 @@ async function findFixedBookingIdByReservationIds(reservationIds) {
 const reservationService = {
 	getAllReservation: async () => {
 		try {
-			const response = await apiClient.get(`/reservations`);
+			const response = await apiClient.get(apiRoutes.reservations.root);
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -35,7 +36,7 @@ const reservationService = {
 
 	getUncanceledReservationOfBranchByDate: async (branchId, date) => {
 		try {
-			const response = await apiClient.get(`/reservations`, {
+			const response = await apiClient.get(apiRoutes.reservations.root, {
 				params: { branchId, date, excludeCancelled: true },
 			});
 			return normalizeReservationList(unwrapApiData(response));
@@ -47,7 +48,7 @@ const reservationService = {
 
 	getUncanceledReservationOfBranchBetween: async (branchId, from, to) => {
 		try {
-			const response = await apiClient.get(`/reservations`, {
+			const response = await apiClient.get(apiRoutes.reservations.root, {
 				params: { branchId, from, to, excludeCancelled: true },
 			});
 			return normalizeReservationList(unwrapApiData(response));
@@ -59,7 +60,7 @@ const reservationService = {
 
 	getReservationById: async (reservationId) => {
 		try {
-			const response = await apiClient.get(`/reservations/${reservationId}`);
+			const response = await apiClient.get(apiRoutes.reservations.byId(reservationId));
 			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -69,7 +70,7 @@ const reservationService = {
 
 	getAllReservationsOfUser: async (status) => {
 		try {
-			const response = await apiClient.get(`/reservations`, {
+			const response = await apiClient.get(apiRoutes.reservations.root, {
 				params: { userScope: "current", status },
 			});
 			return normalizeReservationList(unwrapApiData(response));
@@ -81,7 +82,7 @@ const reservationService = {
 
 	postReservation: async (formData) => {
 		try {
-			const response = await apiClient.post("/reservations", formData);
+			const response = await apiClient.post(apiRoutes.reservations.root, formData);
 			return normalizeReservation(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching reservations:", error);
@@ -91,7 +92,7 @@ const reservationService = {
 
 	cancelReservation: async (reservationId) => {
 		try {
-			const response = await apiClient.patch(`/reservations/${reservationId}`, {
+			const response = await apiClient.patch(apiRoutes.reservations.byId(reservationId), {
 				status: "CANCELLED",
 			});
 			return normalizeReservation(unwrapApiData(response));
@@ -104,7 +105,7 @@ const reservationService = {
 	updateReservation: async (reservationId, reservationData) => {
 		try {
 			const response = await apiClient.patch(
-				`/reservations/${reservationId}`,
+				apiRoutes.reservations.byId(reservationId),
 				reservationData
 			);
 			return normalizeReservation(unwrapApiData(response));
@@ -116,7 +117,7 @@ const reservationService = {
 
 	scheduleCancellation: async (reservationId) => {
 		try {
-			const response = await apiClient.patch(`/reservations/${reservationId}`, {
+			const response = await apiClient.patch(apiRoutes.reservations.byId(reservationId), {
 				status: "SCHEDULED_CANCEL",
 			});
 			return normalizeReservation(unwrapApiData(response));
@@ -128,7 +129,7 @@ const reservationService = {
 
 	scheduleCancellationListId: async (reservationIds) => {
 		try {
-			const response = await apiClient.post(`/reservation-status-updates`, {
+			const response = await apiClient.patch(apiRoutes.reservations.statusUpdates, {
 				reservationIds,
 				status: "SCHEDULED_CANCEL",
 			});
@@ -141,7 +142,7 @@ const reservationService = {
 
 	getRecentReservations: async (branchId) => {
 		try {
-			const response = await apiClient.get(`/reservations`, {
+			const response = await apiClient.get(apiRoutes.reservations.root, {
 				params: { branchId, excludeCancelled: true },
 			});
 			return normalizeReservationList(unwrapApiData(response));
@@ -153,7 +154,7 @@ const reservationService = {
 
 	getAllReservationsByBranch: async (branchId) => {
 		try {
-			const response = await apiClient.get(`/reservations`, {
+			const response = await apiClient.get(apiRoutes.reservations.root, {
 				params: { branchId },
 			});
 			return normalizeReservationList(unwrapApiData(response));
@@ -165,7 +166,7 @@ const reservationService = {
 
 	getAllReservationsByBookAtDesc: async (branchId) => {
 		try {
-			const response = await apiClient.get(`/reservations`, {
+			const response = await apiClient.get(apiRoutes.reservations.root, {
 				params: {
 					...(branchId ? { branchId } : {}),
 					sort: "-createdAt",
@@ -180,7 +181,7 @@ const reservationService = {
 
 	getTodayReservation: async (branchId, date) => {
 		try {
-			const response = await apiClient.get(`/reservations`, {
+			const response = await apiClient.get(apiRoutes.reservations.root, {
 				params: { branchId, date, excludeCancelled: true },
 			});
 			return normalizeReservationList(unwrapApiData(response));
@@ -192,7 +193,7 @@ const reservationService = {
 	updateReservationStatus: async (reservationId, status, token) => {
 		try {
 			const response = await apiClient.patch(
-				`/reservations/${reservationId}`,
+				apiRoutes.reservations.byId(reservationId),
 				{ status },
 				{ headers: { Authorization: `Bearer ${token}` } }
 			);
@@ -206,7 +207,7 @@ const reservationService = {
 	},
 	getReservationsByBranch: async (branchId, token) => {
 		try {
-			const response = await apiClient.get(`/reservations`, {
+			const response = await apiClient.get(apiRoutes.reservations.root, {
 				params: { branchId, excludeCancelled: true },
 				headers: { Authorization: `Bearer ${token}` },
 			});
@@ -221,7 +222,7 @@ const reservationService = {
 
 	sendToManager: async (reservationId) => {
 		try {
-			const response = await apiClient.post(`/reservations/${reservationId}/notifications`, {});
+			const response = await apiClient.post(apiRoutes.reservations.notifications(reservationId), {});
 			return unwrapApiData(response);
 		} catch (error) {
 			console.error("Error:", error);
@@ -231,7 +232,7 @@ const reservationService = {
 
 	createFixedBooking: async (fixedBookingRequest) => {
 		try {
-			const response = await apiClient.post("/fixed-bookings", fixedBookingRequest);
+			const response = await apiClient.post(apiRoutes.reservations.fixedBookings, fixedBookingRequest);
 			const data = unwrapApiData(response);
 			return {
 				...data,
@@ -248,7 +249,7 @@ const reservationService = {
 	updateFixedBookingStatus: async (reservationIds, status) => {
 		try {
 			const fixedBookingId = await findFixedBookingIdByReservationIds(reservationIds);
-			const response = await apiClient.patch(`/fixed-bookings/${fixedBookingId}`, {
+			const response = await apiClient.patch(`${apiRoutes.reservations.fixedBookings}/${fixedBookingId}`, {
 				status: status.toLowerCase(),
 			});
 			return unwrapApiData(response);

@@ -31,6 +31,7 @@ import {
 import { motion } from "framer-motion";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
+import { resolveBackendUrl } from "../../../services/api";
 import badmintionCourtService from "../../../services/badmintonCourtService";
 import reservationDetailService from "../../../services/reservationDetailService";
 import branchService from "../../../services/branchServce";
@@ -96,7 +97,7 @@ const timeToMinutes = (t) => {
 	return h * 60 + m;
 };
 
-const getImageUrl = (p) => `http://localhost:8080/api/${p}`;
+const getImageUrl = (p) => resolveBackendUrl(p);
 
 const CourtCard = ({ court, isExpanded, toggleCourt, onStatusUpdate }) => {
 	const { user } = useAuth();

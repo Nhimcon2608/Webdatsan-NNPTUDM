@@ -1,4 +1,5 @@
 import { created, ok } from "../utils/response.js";
+import { getRequestAccount } from "../middleware/auth.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 import {
   buildReservationDetailsMap,
@@ -59,6 +60,12 @@ export async function getReservations(req, res) {
   }
 
   if (userScope === "current") {
+    const account = await getRequestAccount(req);
+
+    if (!account) {
+      return res.status(401).json({ success: false, message: "Authentication required" });
+    }
+
     rows = rows.filter((item) => item.userAccountId === req.context.accountId);
   }
 

@@ -1,10 +1,11 @@
 import apiClient from "./api";
+import { apiRoutes } from "./routes";
 
 const reviewService = {
 
     getAllReviewsOfBranch: async (branchId) => {
         try {
-            const response = await apiClient.get(`/reviews`, {
+            const response = await apiClient.get(apiRoutes.reviews.root, {
                 params: { branchId },
             });
             return response.data;
@@ -16,7 +17,7 @@ const reviewService = {
 
     getAllReviewsOfUser: async () => {
         try {
-            const response = await apiClient.get(`/reviews`, {
+            const response = await apiClient.get(apiRoutes.reviews.root, {
                 params: { scope: "current" },
             });
             return response.data;
@@ -28,7 +29,7 @@ const reviewService = {
 
     postReview: async (review) => {
         try {
-            const response = await apiClient.post(`/reviews`, review)
+            const response = await apiClient.post(apiRoutes.reviews.root, review)
             return response.data;
 
         } catch (error) {
@@ -39,7 +40,7 @@ const reviewService = {
     
     putReview: async (id, review) => {
         try {
-            const response = await apiClient.patch(`/reviews/${id}`, review)
+            const response = await apiClient.patch(apiRoutes.reviews.byId(id), review)
             return response.data;
 
         } catch (error) {

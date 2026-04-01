@@ -1,4 +1,5 @@
 import apiClient from "./api";
+import { apiRoutes } from "./routes";
 import {
 	normalizeAccount,
 	unwrapApiData,
@@ -7,7 +8,7 @@ import {
 const adminAccountService = {
 	getAllAccounts: async () => {
 		try {
-			const response = await apiClient.get("/accounts");
+			const response = await apiClient.get(apiRoutes.users.root);
 			return (unwrapApiData(response) || []).map(normalizeAccount);
 		} catch (error) {
 			console.error("Error fetching accounts:", error);

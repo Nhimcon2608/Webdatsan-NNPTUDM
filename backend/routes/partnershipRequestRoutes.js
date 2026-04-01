@@ -5,11 +5,12 @@ import {
   getAllPartnershipRequests,
   updatePartnershipRequestStatus,
 } from "../controllers/partnershipRequestController.js";
+import { requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
 router.post("/", createPartnershipRequest);
-router.get("/", getAllPartnershipRequests);
-router.patch("/:requestId", updatePartnershipRequestStatus);
+router.get("/", requireRoles("ADMIN"), getAllPartnershipRequests);
+router.patch("/:requestId/status", requireRoles("ADMIN"), updatePartnershipRequestStatus);
 
 export default router;

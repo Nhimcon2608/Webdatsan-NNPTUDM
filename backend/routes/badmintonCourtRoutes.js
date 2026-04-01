@@ -5,11 +5,12 @@ import {
   getCourts,
   updateCourt,
 } from "../controllers/badmintonCourtController.js";
+import { requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
 router.get("/", getCourts);
-router.post("/", createCourt);
-router.patch("/:courtId", updateCourt);
+router.post("/", requireRoles("ADMIN", "MANAGER"), createCourt);
+router.patch("/:courtId", requireRoles("ADMIN", "MANAGER"), updateCourt);
 
 export default router;

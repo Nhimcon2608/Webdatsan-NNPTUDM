@@ -3,13 +3,14 @@ import {
 	normalizeReservationDetail,
 	unwrapApiData,
 } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 const reservationDetailService = {
-    getAllDetailOfReservation: async (reservationId) => { },
+    getAllDetailOfReservation: async () => { },
 
     postReservationDetail: async (formData) => {
         try {
-            const reposonse = await apiClient.post("/reservation-details", formData);
+            const reposonse = await apiClient.post(apiRoutes.reservations.details, formData);
             return normalizeReservationDetail(unwrapApiData(reposonse));
         } catch (error) {
             console.error("Error fetching reservations details:", error);
@@ -18,7 +19,7 @@ const reservationDetailService = {
     },
     getTodaySlotsByCourt: async (courtId, token) => {
         try {
-            const response = await apiClient.get(`/reservation-details`, {
+            const response = await apiClient.get(apiRoutes.reservations.details, {
                 params: { courtId, date: "today" },
                 headers: { Authorization: `Bearer ${token}` },
             });

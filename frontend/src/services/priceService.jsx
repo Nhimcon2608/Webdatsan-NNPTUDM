@@ -5,12 +5,13 @@ import {
 	normalizePriceList,
 	unwrapApiData,
 } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 const priceService = {
 	// Lấy tất cả bảng giá
 	getAll: async () => {
 		try {
-			const response = await apiClient.get("/prices");
+			const response = await apiClient.get(apiRoutes.prices.root);
 			return normalizePriceList(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error fetching all prices:", error);
@@ -21,7 +22,7 @@ const priceService = {
 	// Lấy bảng giá theo ID
 	getById: async (id) => {
 		try {
-			const response = await apiClient.get(`/prices/${id}`);
+			const response = await apiClient.get(apiRoutes.prices.byId(id));
 			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error fetching price by id ${id}:`, error);
@@ -32,7 +33,7 @@ const priceService = {
 	// Lấy bảng giá theo chi nhánh
 	getByBranchId: async (branchId) => {
 		try {
-			const response = await apiClient.get(`/prices`, {
+			const response = await apiClient.get(apiRoutes.prices.root, {
 				params: { branchId },
 			});
 			return normalizePriceList(unwrapApiData(response));
@@ -44,7 +45,7 @@ const priceService = {
 
 	getAllPriceTypesByBranch: async (branchId) => {
 		try {
-			const response = await apiClient.get(`/price-types`, {
+			const response = await apiClient.get(apiRoutes.priceTypes.root, {
 				params: { branchId, include: "prices" },
 			});
 			return groupPricesByType(response);
@@ -56,7 +57,7 @@ const priceService = {
 
 	getByBranchAndPriceType: async (branchId, priceTypeId) => {
 		try {
-			const response = await apiClient.get(`/prices`, {
+			const response = await apiClient.get(apiRoutes.prices.root, {
 				params: { branchId, priceTypeId },
 			});
 			return normalizePriceList(unwrapApiData(response));
@@ -74,7 +75,7 @@ const priceService = {
 	// Tạo mới bảng giá
 	create: async (data) => {
 		try {
-			const response = await apiClient.post("/prices", data);
+			const response = await apiClient.post(apiRoutes.prices.root, data);
 			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error("Error creating price:", error);
@@ -85,7 +86,7 @@ const priceService = {
 	// Cập nhật bảng giá
 	update: async (id, data) => {
 		try {
-			const response = await apiClient.patch(`/prices/${id}`, data);
+			const response = await apiClient.patch(apiRoutes.prices.byId(id), data);
 			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error updating price with id ${id}:`, error);
@@ -96,7 +97,7 @@ const priceService = {
 	// Xóa bảng giá
 	delete: async (id) => {
 		try {
-			const response = await apiClient.delete(`/prices/${id}`);
+			const response = await apiClient.delete(apiRoutes.prices.byId(id));
 			return normalizePrice(unwrapApiData(response));
 		} catch (error) {
 			console.error(`Error deleting price with id ${id}:`, error);

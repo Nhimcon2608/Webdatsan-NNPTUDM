@@ -4,11 +4,12 @@ import {
 	normalizeVoucherList,
 	unwrapApiData,
 } from "./normalizers";
+import { apiRoutes } from "./routes";
 
 const voucherService = {
     getAllVouchersOfBranch: async (branchId) => {
         try {
-            const response = await apiClient.get(`/vouchers`, {
+            const response = await apiClient.get(apiRoutes.vouchers.root, {
                 params: { branchId },
             });
             return normalizeVoucherList(unwrapApiData(response));
@@ -19,7 +20,7 @@ const voucherService = {
     },
     createVoucher: async (voucherData, token) => {
         try {
-            const response = await apiClient.post("/vouchers", voucherData, {
+            const response = await apiClient.post(apiRoutes.vouchers.root, voucherData, {
                 headers: { Authorization: `Bearer ${token}` },
             });
             const voucher = normalizeVoucher(unwrapApiData(response));
@@ -34,7 +35,7 @@ const voucherService = {
     updateVoucher: async (voucherId, voucherData, token) => {
         try {
             const response = await apiClient.patch(
-                `/vouchers/${voucherId}`,
+                apiRoutes.vouchers.byId(voucherId),
                 voucherData,
                 {
                     headers: { Authorization: `Bearer ${token}` },
@@ -54,7 +55,7 @@ const voucherService = {
     toggleVoucherAvailability: async (voucherId, status, token) => {
         try {
             const response = await apiClient.patch(
-                `/vouchers/${voucherId}`,
+                apiRoutes.vouchers.byId(voucherId),
                 { status },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
