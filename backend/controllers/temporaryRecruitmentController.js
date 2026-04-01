@@ -1,5 +1,9 @@
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
+import {
+  buildTemporaryRecruitmentContext,
+  serializeTemporaryRecruitment,
+} from "../utils/temporaryRecruitmentView.js";
 
 function toBoolean(value) {
   if (typeof value === "boolean") {
@@ -10,18 +14,19 @@ function toBoolean(value) {
 
 export async function getAllTemporaryRecruitments(req, res) {
   const { branchId, available, reservationId } = req.query;
-  let rows = [...(await list("temporaryRecruitments"))];
+  const context = await buildTemporaryRecruitmentContext();
+  let rows = context.temporaryRecruitments.map((item) => serializeTemporaryRecruitment(item, context));
 
   if (branchId) {
-    rows = rows.filter((item) => item.branchId === branchId);
+    rows = rows.filter((item) => item?.branchId === branchId);
   }
 
   if (reservationId) {
-    rows = rows.filter((item) => item.reservationId === reservationId);
+    rows = rows.filter((item) => item?.reservationId === reservationId);
   }
 
   if (available !== undefined) {
-    rows = rows.filter((item) => item.available === toBoolean(available));
+    rows = rows.filter((item) => item?.available === toBoolean(available));
   }
 
   return ok(res, rows);
@@ -33,20 +38,9 @@ export async function getTemporaryRecruitmentById(req, res) {
     return res.status(404).json({ success: false, message: "Temporary recruitment not found" });
   }
 
-  if (req.query.include === "branch,reservation" || req.query.include === "full") {
-    const [branches, reservations] = await Promise.all([
-      list("branches"),
-      list("reservations"),
-    ]);
-
-    return ok(res, {
-      ...row,
-      branch: branches.find((item) => item.id === row.branchId) || null,
-      reservation: reservations.find((item) => item.id === row.reservationId) || null,
-    });
-  }
-
-  return ok(res, row);
+  const context = await buildTemporaryRecruitmentContext();
+  const serialized = serializeTemporaryRecruitment(row, context);
+  return ok(res, serialized);
 }
 
 export async function createTemporaryRecruitment(req, res) {
@@ -54,8 +48,9 @@ export async function createTemporaryRecruitment(req, res) {
     ...req.body,
     available: req.body?.available ?? true,
   });
-
-  return created(res, createdRow, "Temporary recruitment created");
+  const context = await buildTemporaryRecruitmentContext();
+  const serialized = serializeTemporaryRecruitment(createdRow, context);
+  return created(res, serialized, "Temporary recruitment created");
 }
 
 export async function updateTemporaryRecruitment(req, res) {
@@ -71,5 +66,7 @@ export async function updateTemporaryRecruitment(req, res) {
     return res.status(404).json({ success: false, message: "Temporary recruitment not found" });
   }
 
-  return ok(res, updated, "Temporary recruitment updated");
+  const context = await buildTemporaryRecruitmentContext();
+  const serialized = serializeTemporaryRecruitment(updated, context);
+  return ok(res, serialized, "Temporary recruitment updated");
 }

@@ -115,12 +115,20 @@ const AllTemporaryRecruitmentPage = ({ user = null }) => {
                 ]);
 
                 setSavedIds(prev => {
-                    const newSet = new Set(saved.map(item => item.id));
+                    const newSet = new Set(
+                        saved
+                            .map(item => item.id || item.temporaryRecruitmentId)
+                            .filter(Boolean)
+                    );
                     return areSetsEqual(prev, newSet) ? prev : newSet;
                 });
 
                 setRegistrationIds(prev => {
-                    const newSet = new Set(registration.map(item => item.id));
+                    const newSet = new Set(
+                        registration
+                            .map(item => item.id || item.temporaryRecruitmentId)
+                            .filter(Boolean)
+                    );
                     return areSetsEqual(prev, newSet) ? prev : newSet;
                 });
             } else {
@@ -786,17 +794,20 @@ const AllTemporaryRecruitmentPage = ({ user = null }) => {
                 ) : tempRecruitmentsRes.data.length > 0 ? (
                     <>
                         <Stack spacing={2}>
-                            {tempRecruitmentsRes.data.map(item => (
-                                <TemporaryRecruitmentPostItem
-                                    key={item.id}
-                                    item={item}
-                                    handleOpenDetail={handleOpenDetail}
-                                    theme={theme}
-                                    isSaved={savedIds.has(item.id)}
-                                    isRegistration={registrationIds.has(item.id)}
-                                    user={user}
-                                />
-                            ))}
+                            {tempRecruitmentsRes.data.map((item, index) => {
+                                const recruitmentId = item?.id || item?.temporaryRecruitmentId || item?.reservationId || `temporary-recruitment-${index}`;
+                                return (
+                                    <TemporaryRecruitmentPostItem
+                                        key={recruitmentId}
+                                        item={item}
+                                        handleOpenDetail={handleOpenDetail}
+                                        theme={theme}
+                                        isSaved={savedIds.has(recruitmentId)}
+                                        isRegistration={registrationIds.has(recruitmentId)}
+                                        user={user}
+                                    />
+                                );
+                            })}
                         </Stack>
 
                         {tempRecruitmentsRes.totalPages > 1 && (
@@ -847,7 +858,7 @@ const AllTemporaryRecruitmentPage = ({ user = null }) => {
                     formatDateForDisplay={formatDateForDisplay}
                     formatDateOnly={formatDateOnly}
                     theme={theme}
-                    isRegistration={registrationIds.has(selectedRecruitment.id)}
+                    isRegistration={registrationIds.has(selectedRecruitment?.id || selectedRecruitment?.temporaryRecruitmentId)}
                     user={user}
                 />
             )}

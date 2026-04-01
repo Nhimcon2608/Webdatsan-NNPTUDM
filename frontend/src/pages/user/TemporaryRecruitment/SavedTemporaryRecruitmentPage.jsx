@@ -38,7 +38,11 @@ const SavedTemporaryRecruitmentPage = ({user = null}) => {
             setTemporaryRecruitmentSaved(res);
 
             const temporaryRegistration = await temporaryRegistrationService.getAllTemporaryRegistrationOfUser();
-            setRegistrationIds(new Set(temporaryRegistration.map(item => item.id)));
+            setRegistrationIds(new Set(
+                temporaryRegistration
+                    .map(item => item.id || item.temporaryRecruitmentId)
+                    .filter(Boolean)
+            ));
             
         } catch (error) {
             console.error("Error fetching recruitments saved:", error);
@@ -79,18 +83,21 @@ const SavedTemporaryRecruitmentPage = ({user = null}) => {
                 ) : (
                     temporaryRecruitmentSaved.length > 0 ? (
                         <Stack spacing={2}>
-                            {temporaryRecruitmentSaved.map((item) => (
-                                <TemporaryRecruitmentPostItem
-                                    key={item.id}
-                                    item={item}
-                                    handleOpenDetail={handleOpenDetail}
-                                    theme={theme}
-                                    isSaved={true}
-                                    isRegistration={registrationIds.has(item.id)}
-                                    user={user}
-                                    onUnsaveSuccess={handleUnsaveSuccess}
-                                />
-                            ))}
+                            {temporaryRecruitmentSaved.map((item, index) => {
+                                const recruitmentId = item?.id || item?.temporaryRecruitmentId || item?.reservationId || `saved-recruitment-${index}`;
+                                return (
+                                    <TemporaryRecruitmentPostItem
+                                        key={recruitmentId}
+                                        item={item}
+                                        handleOpenDetail={handleOpenDetail}
+                                        theme={theme}
+                                        isSaved={true}
+                                        isRegistration={registrationIds.has(recruitmentId)}
+                                        user={user}
+                                        onUnsaveSuccess={handleUnsaveSuccess}
+                                    />
+                                );
+                            })}
                         </Stack>
 
                     ) : (
@@ -115,6 +122,8 @@ const SavedTemporaryRecruitmentPage = ({user = null}) => {
                     formatDateOnly={formatDateOnly}
                     formatTimeOnly={formatTimeOnly}
                     theme={theme}
+                    isRegistration={registrationIds.has(selectedRecruitment?.id || selectedRecruitment?.temporaryRecruitmentId)}
+                    user={user}
                 />
             )}
         </>

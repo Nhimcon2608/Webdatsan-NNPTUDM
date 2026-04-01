@@ -73,12 +73,22 @@ const TemporaryRecruitmentDetailSharePage = () => {
                         temporaryRecruitmentSavedService.getAllTemporaryRecruitmentSavedOfUser(),
                     ]);
 
-                    const registrationIds = new Set(registrationRes.map(item => item.id));
-                    const savedIds = new Set(savedRes.map(item => item.id));
+                    const registrationIds = new Set(
+                        registrationRes
+                            .map(item => item.id || item.temporaryRecruitmentId)
+                            .filter(Boolean)
+                    );
+                    const savedIds = new Set(
+                        savedRes
+                            .map(item => item.id || item.temporaryRecruitmentId)
+                            .filter(Boolean)
+                    );
 
                     setIsRegistration(registrationIds.has(detailRes.id));
                     setIsSaved(savedIds.has(detailRes.id));
-
+                } else {
+                    setIsRegistration(false);
+                    setIsSaved(false);
                 }
 
             } catch (e) {
@@ -89,7 +99,7 @@ const TemporaryRecruitmentDetailSharePage = () => {
         };
 
         fetchDetail();
-    }, [temporaryRecruitmentId]);
+    }, [temporaryRecruitmentId, user?.id]);
 
     useEffect(() => {
         if (!user || !user.id) {
@@ -104,7 +114,7 @@ const TemporaryRecruitmentDetailSharePage = () => {
 
     const handleLoginSuccess = async (response) => {
         localStorage.setItem("authToken", response.token);
-        const userLogged = await login();
+        await login();
         setOpenLoginModal(false);
     };
 
@@ -113,7 +123,12 @@ const TemporaryRecruitmentDetailSharePage = () => {
         showSnackbar("Đăng ký thành công", "success");
     };
 
-    const handleRegistion = (e) => {
+    const handleRegistion = () => {
+        if (!data?.id) {
+            showSnackbar("Không tìm thấy mã tin tuyển vãng lai", "error");
+            return;
+        }
+
         if (!user) {
             setOpenLoginModal(true);
             return;
@@ -127,6 +142,11 @@ const TemporaryRecruitmentDetailSharePage = () => {
     }
 
     const handleSaveRecruitment = async () => {
+        if (!temporaryRecruitmentId) {
+            showSnackbar("Không tìm thấy mã tin tuyển vãng lai", "error");
+            return;
+        }
+
         if (!user) {
             setOpenLoginModal(true);
             return;
@@ -135,9 +155,6 @@ const TemporaryRecruitmentDetailSharePage = () => {
         if (isSaved) {
             await temporaryRecruitmentSavedService.unSaved(temporaryRecruitmentId);
             setIsSaved(false);
-            if (onUnsaveSuccess) {
-                onUnsaveSuccess();
-            }
         } else {
             const res = await temporaryRecruitmentSavedService.save(temporaryRecruitmentId);
 
@@ -194,6 +211,14 @@ const TemporaryRecruitmentDetailSharePage = () => {
         );
     }
 
+    const displayName = data?.username || "Người chơi";
+    const createAt = data?.createAt || data?.createdAt;
+    const rentalInformations = data?.badmintonCourtRentalInformations || [];
+    const firstStartTime = rentalInformations
+        .map(item => item?.startTime)
+        .filter(Boolean)
+        .sort()[0];
+
 
     return (
         <>
@@ -210,17 +235,17 @@ const TemporaryRecruitmentDetailSharePage = () => {
                                 />
                             ) : (
                                 <Avatar
-                                    sx={{ width: 56, height: 56, mr: 2, bgcolor: stringToColor(data.username) }}
+                                    sx={{ width: 56, height: 56, mr: 2, bgcolor: stringToColor(displayName) }}
                                 >
-                                    {data.username?.charAt(0).toUpperCase()}
+                                    {displayName.charAt(0).toUpperCase()}
                                 </Avatar>
                             )
                         }
 
                         <Box>
-                            <Typography variant="h6">{data.username}</Typography>
+                            <Typography variant="h6">{displayName}</Typography>
                             <Typography variant="body2" color="text.secondary">
-                                Ngày đăng: {new Date(data.createAt).toLocaleString()}
+                                Ngày đăng: {createAt ? new Date(createAt).toLocaleString() : "Chưa cập nhật"}
                             </Typography>
                         </Box>
                     </Box>
@@ -245,22 +270,19 @@ const TemporaryRecruitmentDetailSharePage = () => {
                                 Ngày tuyển: {data.bookAt?.slice(0, 10)}
                             </Typography>
 
-                            <Typography variant="body2" color="text.secondary">
-                                Lúc: {
-                                    data.badmintonCourtRentalInformations
-                                        .map(i => i.startTime)
-                                        .sort()[0]
-                                        .slice(0, 5)
-                                }
-                            </Typography>
+                            {firstStartTime && (
+                                <Typography variant="body2" color="text.secondary">
+                                    Lúc: {firstStartTime.slice(0, 5)}
+                                </Typography>
+                            )}
                         </Box>
                     </Box>
 
-                    <Typography>Số lượng tuyển: <strong>{data.quantity} người</strong></Typography>
+                    <Typography>Số lượng tuyển: <strong>{data.quantity || 0} người</strong></Typography>
 
                     <Typography sx={{ mt: 2 }}>Nội dung:</Typography>
                     <Paper sx={{ p: 2, backgroundColor: "#fafafa", borderRadius: 1 }}>
-                        <Typography>{data.content}</Typography>
+                        <Typography>{data.content || "Chưa có nội dung mô tả."}</Typography>
                     </Paper>
 
                     <Divider sx={{ my: 3 }} />
@@ -272,12 +294,12 @@ const TemporaryRecruitmentDetailSharePage = () => {
                     <Box sx={{ display: "flex", alignItems: "flex-start", mb: 2 }}>
                         <BadmintonIcon style={{ marginRight: 10 }} />
                         <Box>
-                            <Typography fontWeight={600}>{data.branchName}</Typography>
+                            <Typography fontWeight={600}>{data.branchName || "Chưa cập nhật"}</Typography>
 
                             <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
                                 <LocationOnIcon color="action" sx={{ fontSize: 16, mr: 0.5 }} />
                                 <Typography variant="body2" color="text.secondary">
-                                    {data.address}
+                                    {data.address || "Chưa cập nhật địa chỉ"}
                                 </Typography>
                             </Box>
                         </Box>
@@ -289,6 +311,7 @@ const TemporaryRecruitmentDetailSharePage = () => {
                         size="small"
                         sx={{ mb: 3 }}
                         onClick={() => window.open(`https://www.google.com/maps?q=${data.address}`)}
+                        disabled={!data.address}
                     >
                         Chỉ đường
                     </Button>
@@ -298,22 +321,28 @@ const TemporaryRecruitmentDetailSharePage = () => {
                     </Typography>
 
                     <List dense>
-                        {data.badmintonCourtRentalInformations.map((court, index) => (
+                        {rentalInformations.map((court, index) => (
                             <ListItem key={index} sx={{ px: 0 }}>
                                 <ListItemIcon sx={{ minWidth: 40 }}>
                                     <ScheduleIcon />
                                 </ListItemIcon>
                                 <ListItemText
                                     primary={`Sân: ${court.ordinalNumber}`}
-                                    secondary={`Bắt đầu: ${court.startTime.slice(0, 5)} • Thời gian: ${court.rentalTime} tiếng`}
+                                    secondary={`Bắt đầu: ${(court.startTime || "").slice(0, 5)} • Thời gian: ${court.rentalTime || 0} tiếng`}
                                 />
                             </ListItem>
                         ))}
                     </List>
 
+                    {rentalInformations.length === 0 && (
+                        <Typography variant="body2" color="text.secondary">
+                            Chưa có chi tiết đặt sân.
+                        </Typography>
+                    )}
+
                     <Divider sx={{ my: 3 }} />
 
-                    {user?.username != data.username && (
+                    {user?.username != displayName && (
                         <Stack direction="row" spacing={1} alignItems="center">
 
                             <Button

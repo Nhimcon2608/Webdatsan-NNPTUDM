@@ -27,12 +27,15 @@ import WorkIcon from "@mui/icons-material/Work";
 import CheckIcon from '@mui/icons-material/Check';
 
 import { useSnackbar } from "../../../context/SnackbarContext";
+import { useAuth } from "../../../context/AuthContext";
 
 
 import BadmintonIcon from "../../components/common/BadmintonIcon";
 import RegistrationConfirmModal from "./RegistrationConfirmModal";
+import LoginModal from "./LoginModal";
 
 import temporaryRecruitmentService from "../../services/temporaryRecruitmentService";
+import authService from "../../services/authService";
 
 import { stringToColor } from "../../utils/stringToColor";
 
@@ -49,13 +52,16 @@ const TemporaryRecruitmentDetailModal = ({
     theme
 }) => {
     const { showSnackbar } = useSnackbar();
+    const { login } = useAuth();
 
     const [recruitmentDetails, setRecruitmentDetails] = useState();
     const [loading, setLoading] = useState(false);
     const [openRegistrationConfirmModal, setOpenRegistrationConfirmModal] = useState(false);
+    const [openLoginModal, setOpenLoginModal] = useState(false);
 
     useEffect(() => {
         if (!open || !data?.id) return;
+        setRecruitmentDetails(data);
 
         const fetchDetail = async () => {
             setLoading(true);
@@ -72,7 +78,21 @@ const TemporaryRecruitmentDetailModal = ({
         fetchDetail();
     }, [open, data]);
 
-        const handleRegistion = (e) => {
+    const detailData = recruitmentDetails || data || {};
+    const displayName = detailData?.username || "Người chơi";
+    const createAt = detailData?.createAt || detailData?.createdAt;
+    const rentalInformations = detailData?.badmintonCourtRentalInformations || [];
+    const firstStartTime = rentalInformations
+        .map(item => item?.startTime)
+        .filter(Boolean)
+        .sort()[0];
+
+    const handleRegistion = () => {
+        if (!detailData?.id) {
+            showSnackbar("Không tìm thấy mã tin tuyển vãng lai", "error");
+            return;
+        }
+
         if (!user) {
             setOpenLoginModal(true);
             return;
@@ -83,6 +103,17 @@ const TemporaryRecruitmentDetailModal = ({
     const handleRegisterRecruitmentSuccess = () => {
         showSnackbar("Đăng ký vãng lai thành công", "success");
     }
+
+    const handleLoginSuccess = async (response) => {
+        localStorage.setItem("authToken", response.token);
+        await login();
+        setOpenLoginModal(false);
+    };
+
+    const handleRegisterSuccess = () => {
+        setOpenLoginModal(false);
+        showSnackbar("Đăng ký thành công", "success");
+    };
 
     return (
         <>
@@ -103,30 +134,30 @@ const TemporaryRecruitmentDetailModal = ({
                         <CircularProgress />
                     </Box>
                 ) : (
-                    recruitmentDetails && (
+                    detailData && (
                         <DialogContent>
                             <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
                                 {
-                                    data.imagePath ? (
+                                    detailData.imagePath ? (
                                         <Avatar
-                                            src={`${import.meta.env.VITE_API_URL}/${data.imagePath}`}
-                                            alt={data.username}
+                                            src={`${import.meta.env.VITE_API_URL}/${detailData.imagePath}`}
+                                            alt={displayName}
                                             sx={{ width: 56, height: 56, mr: 2 }}
                                         />
                                     ) : (
                                         <Avatar
-                                            sx={{ width: 56, height: 56, mr: 2, bgcolor: stringToColor(data.username) }}
+                                            sx={{ width: 56, height: 56, mr: 2, bgcolor: stringToColor(displayName) }}
                                         >
-                                            {data.username?.charAt(0).toUpperCase()}
+                                            {displayName.charAt(0).toUpperCase()}
                                         </Avatar>
                                     )
                                 }
                                 <Box>
                                     <Typography variant="h6" fontWeight={600}>
-                                        {data.username}
+                                        {displayName}
                                     </Typography>
                                     <Typography variant="body2" color="text.secondary">
-                                        Ngày đăng: {formatDateForDisplay(data.createAt)}
+                                        Ngày đăng: {formatDateForDisplay(createAt)}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -152,21 +183,18 @@ const TemporaryRecruitmentDetailModal = ({
                                     <EventIcon color="primary" sx={{ mr: 2 }} />
                                     <Box>
                                         <Typography variant="body1" fontWeight={600} color="primary">
-                                            Ngày tuyển: {formatDateOnly(data.bookAt)}
+                                            Ngày tuyển: {formatDateOnly(detailData.bookAt)}
                                         </Typography>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Lúc: {
-                                                recruitmentDetails.badmintonCourtRentalInformations
-                                                    .map(item => item.startTime)
-                                                    .sort()
-                                                [0].slice(0, 5)
-                                            }
-                                        </Typography>
+                                        {firstStartTime && (
+                                            <Typography variant="body2" color="text.secondary">
+                                                Lúc: {firstStartTime.slice(0, 5)}
+                                            </Typography>
+                                        )}
                                     </Box>
                                 </Box>
 
                                 <Typography variant="body1" sx={{ mb: 1 }}>
-                                    Số lượng tuyển: <strong>{data.quantity} người</strong>
+                                    Số lượng tuyển: <strong>{detailData.quantity || 0} người</strong>
                                 </Typography>
 
                                 <Typography variant="body1" sx={{ mb: 2 }}>
@@ -175,14 +203,14 @@ const TemporaryRecruitmentDetailModal = ({
 
                                 <Paper sx={{ p: 2, backgroundColor: "#fafafa", borderRadius: 1 }}>
                                     <Typography variant="body2" sx={{ lineHeight: 1.6 }}>
-                                        {data.content}
+                                        {detailData.content || "Chưa có nội dung mô tả."}
                                     </Typography>
                                 </Paper>
                             </Box>
 
                             <Divider sx={{ my: 2 }} />
 
-                            {data && (
+                            {detailData && (
                                 <Box sx={{ mb: 3 }}>
                                     <Typography variant="subtitle1" fontWeight={600} gutterBottom>
                                         Thông tin sân cầu lông
@@ -195,12 +223,12 @@ const TemporaryRecruitmentDetailModal = ({
                                             />
                                             <Box>
                                                 <Typography variant="body1" fontWeight={600}>
-                                                    {data.branchName}
+                                                    {detailData.branchName || "Chưa cập nhật"}
                                                 </Typography>
                                                 <Box sx={{ display: "flex", alignItems: "center", mt: 0.5 }}>
                                                     <LocationOnIcon color="action" sx={{ fontSize: 16, mr: 0.5 }} />
                                                     <Typography variant="body2" color="text.secondary">
-                                                        {recruitmentDetails.address}
+                                                        {detailData.address || "Chưa cập nhật địa chỉ"}
                                                     </Typography>
                                                 </Box>
                                             </Box>
@@ -210,7 +238,8 @@ const TemporaryRecruitmentDetailModal = ({
                                             variant="outlined"
                                             startIcon={<DirectionsIcon />}
                                             size="small"
-                                            onClick={() => handleGetDirections(recruitmentDetails.address)}
+                                            onClick={() => handleGetDirections(detailData.address || "")}
+                                            disabled={!detailData.address}
                                         >
                                             Chỉ đường
                                         </Button>
@@ -221,19 +250,25 @@ const TemporaryRecruitmentDetailModal = ({
                                     </Typography>
 
                                     <List dense>
-                                        {recruitmentDetails.badmintonCourtRentalInformations.map((court, index) => (
+                                        {rentalInformations.map((court, index) => (
                                             <ListItem key={index} sx={{ px: 0 }}>
                                                 <ListItemIcon sx={{ minWidth: 40 }}>
                                                     <ScheduleIcon color="secondary" />
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={`Sân: ${court.ordinalNumber}`}
-                                                    secondary={`Bắt đầu: ${court.startTime.slice(0, 5)} • Thời gian: ${court.rentalTime} tiếng`}
+                                                    secondary={`Bắt đầu: ${(court.startTime || "").slice(0, 5)} • Thời gian: ${court.rentalTime || 0} tiếng`}
                                                 />
 
                                             </ListItem>
                                         ))}
                                     </List>
+
+                                    {rentalInformations.length === 0 && (
+                                        <Typography variant="body2" color="text.secondary">
+                                            Chưa có chi tiết đặt sân.
+                                        </Typography>
+                                    )}
                                 </Box>
                             )}
                         </DialogContent>
@@ -243,7 +278,7 @@ const TemporaryRecruitmentDetailModal = ({
                     <Button onClick={onClose} color="inherit">
                         Đóng
                     </Button>
-                    {data.username !== user?.username && (
+                    {displayName !== user?.username && (
                         <Button
                             variant="contained"
                             startIcon={isRegistration ? <CheckIcon /> : <WorkIcon />}
@@ -270,8 +305,21 @@ const TemporaryRecruitmentDetailModal = ({
                 <RegistrationConfirmModal
                     open={openRegistrationConfirmModal}
                     onClose={() => setOpenRegistrationConfirmModal(false)}
-                    item={data}
+                    item={detailData}
                     onRegisterSuccess={handleRegisterRecruitmentSuccess}
+                />
+            )}
+
+            {openLoginModal && (
+                <LoginModal
+                    open={openLoginModal}
+                    isModal={true}
+                    onClose={() => setOpenLoginModal(false)}
+                    authService={authService}
+                    onLoginSuccess={handleLoginSuccess}
+                    onRegisterSuccess={handleRegisterSuccess}
+                    defaultTab="login"
+                    showTabs={true}
                 />
             )}
         </>
