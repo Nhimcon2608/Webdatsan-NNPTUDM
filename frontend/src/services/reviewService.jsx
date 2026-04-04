@@ -1,4 +1,5 @@
 import apiClient from "./api";
+import { unwrapApiData } from "./normalizers";
 import { apiRoutes } from "./routes";
 
 const reviewService = {
@@ -8,7 +9,7 @@ const reviewService = {
             const response = await apiClient.get(apiRoutes.reviews.root, {
                 params: { branchId },
             });
-            return response.data;
+            return unwrapApiData(response) || [];
         } catch (error) {
             console.error('Error fetching branch reviews:', error);
             throw error;
@@ -20,7 +21,7 @@ const reviewService = {
             const response = await apiClient.get(apiRoutes.reviews.root, {
                 params: { scope: "current" },
             });
-            return response.data;
+            return unwrapApiData(response) || [];
         } catch (error) {
             console.error('Error fetching branch reviews:', error);
             throw error;
@@ -30,7 +31,7 @@ const reviewService = {
     postReview: async (review) => {
         try {
             const response = await apiClient.post(apiRoutes.reviews.root, review)
-            return response.data;
+            return unwrapApiData(response);
 
         } catch (error) {
             console.error('Error fetching branch review:', error);
@@ -41,7 +42,7 @@ const reviewService = {
     putReview: async (id, review) => {
         try {
             const response = await apiClient.patch(apiRoutes.reviews.byId(id), review)
-            return response.data;
+            return unwrapApiData(response);
 
         } catch (error) {
             console.error('Error fetching branch review:', error);

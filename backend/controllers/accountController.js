@@ -1,6 +1,7 @@
 import { ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 import { toPublicAccount } from "../utils/accountView.js";
+import { persistUploadedFile } from "../utils/uploadStorage.js";
 
 function resolveAccountId(req) {
   return req.context.accountId || null;
@@ -77,11 +78,13 @@ export async function updateAccount(req, res) {
 export async function uploadImage(req, res) {
   const accountId = resolveAccountId(req);
   const file = getUploadedFile(req);
-  const imageUrl = file?.originalname
-    ? `/uploads/accounts/${accountId}/${file.originalname}`
-    : req.body?.avatarUrl || "";
+  const imageUrl =
+    (await persistUploadedFile(file, ["accounts", accountId])) || req.body?.avatarUrl || "";
 
-  const updated = await updateById("accounts", accountId, { avatarUrl: imageUrl });
+  const updated = await updateById("accounts", accountId, {
+    avatarUrl: imageUrl,
+    imagePath: imageUrl,
+  });
   if (!updated) {
     return res.status(404).json({ success: false, message: "Account not found" });
   }

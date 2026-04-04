@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { apiBaseUrl } from "../src/services/api";
+import { apiRoutes } from "../src/services/routes";
 
 export default function useSSE(userId) {
     const sourceRef = useRef(null);
@@ -8,8 +9,17 @@ export default function useSSE(userId) {
     useEffect(() => {
         if (!userId) return;
 
+        const token = localStorage.getItem("authToken");
+        const params = new URLSearchParams({
+            userId: String(userId),
+        });
+
+        if (token) {
+            params.set("token", token);
+        }
+
         const source = new EventSource(
-            `${apiBaseUrl}/event-streams/notifications?userId=${encodeURIComponent(userId)}`
+            `${apiBaseUrl}${apiRoutes.notifications.stream}?${params.toString()}`
         );
         sourceRef.current = source;
 

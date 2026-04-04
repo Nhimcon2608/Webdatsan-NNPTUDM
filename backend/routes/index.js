@@ -37,14 +37,14 @@ router.use("/courts", badmintonCourtImageRoutes);
 router.use("/prices", priceRoutes);
 router.use("/price-types", priceTypeRoutes);
 
-router.use("/reservations", reservationRoutes);
 router.use("/reservations/details", reservationDetailRoutes);
 router.use("/reservations/status-updates", reservationStatusUpdateRoutes);
 router.use("/reservations/fixed-bookings", fixedBookingRoutes);
+router.use("/reservations", reservationRoutes);
 
-router.use("/temporary-recruitments", temporaryRecruitmentRoutes);
 router.use("/temporary-recruitments/saved", temporaryRecruitmentSavedRoutes);
 router.use("/temporary-recruitments/registrations", temporaryRegistrationRoutes);
+router.use("/temporary-recruitments", temporaryRecruitmentRoutes);
 
 router.use("/reviews", reviewRoutes);
 router.use("/payments", paymentRoutes);

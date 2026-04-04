@@ -26,10 +26,36 @@ import badmintionCourtService from "../../services/badmintonCourtService";
 import BookingDetail from '../../components/modal/BookingDetail';
 import paymentService from "../../services/paymentService";
 
+function resolvePaymentStatus(reservationStatus, resultCode) {
+    if (resultCode === "0") {
+        return "success";
+    }
+
+    if (resultCode !== null && resultCode !== "") {
+        return "failed";
+    }
+
+    if (reservationStatus === "waiting") {
+        return "success";
+    }
+
+    if (reservationStatus === "awaiting_payment") {
+        return "pending";
+    }
+
+    if (reservationStatus === "cancel") {
+        return "failed";
+    }
+
+    return "error";
+}
+
 const PaymentResult = () => {
     const [params] = useSearchParams();
     const navigate = useNavigate();
     const orderId = params.get("orderId");
+    const resultCode = params.get("resultCode");
+    const momoMessage = params.get("message");
     const [reservationId, setReservationId] = useState(null);
     const [status, setStatus] = useState("loading");
     const [reservationData, setReservationData] = useState({});
@@ -37,7 +63,6 @@ const PaymentResult = () => {
     const [branchInfo, setBranchInfo] = useState({});
     const [resIds, setResIds] = useState([]);
     const [multipleReservations, setMultipleReservations] = useState([]);
-
 
     useEffect(() => {
         let isMounted = true;
@@ -77,16 +102,7 @@ const PaymentResult = () => {
                 if (!isMounted) return;
 
                 setReservationData(reservation);
-
-                if (reservation.status === "waiting") {
-                    setStatus("success");
-                } else if (reservation.status === "awaiting_payment") {
-                    setStatus("pending");
-                } else if (reservation.status === "cancel") {
-                    setStatus("failed");
-                } else {
-                    setStatus("error");
-                }
+                setStatus(resolvePaymentStatus(reservation.status, resultCode));
 
                 const courts = await badmintionCourtService.getAllCourtsOfBranchByStatus(
                     reservation.branchId,
@@ -119,7 +135,7 @@ const PaymentResult = () => {
         return () => {
             isMounted = false;
         };
-    }, [orderId]);
+    }, [orderId, resultCode]);
 
 
     const handleGoBranchs = () => {
@@ -140,7 +156,7 @@ const PaymentResult = () => {
             case 'failed':
                 return {
                     title: 'THANH TOÁN THẤT BẠI',
-                    subtitle: `Thanh toán cho lịch đặt ${reservationId || ''} không thành công`,
+                    subtitle: momoMessage || `Thanh toán cho lịch đặt ${reservationId || ''} không thành công`,
                     color: theme.palette.error.main,
                     bg: theme.palette.error.light,
                     icon: <Cancel sx={{ fontSize: 44 }} />,
@@ -205,10 +221,7 @@ const PaymentResult = () => {
                                                 const branch = await branchService.getBranchById(res.branchId);
                                                 setBranchInfo(branch);
                                                 setReservationId(r.id);
-                                                if (res.status === 'waiting') setStatus('success');
-                                                else if (res.status === 'awaiting_payment') setStatus('pending');
-                                                else if (res.status === 'cancel') setStatus('failed');
-                                                else setStatus('error');
+                                                setStatus(resolvePaymentStatus(res.status, resultCode));
                                             } catch (err) {
                                                 console.error('Error loading reservation detail', err);
                                             }

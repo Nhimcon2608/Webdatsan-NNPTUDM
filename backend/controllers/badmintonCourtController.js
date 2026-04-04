@@ -14,6 +14,24 @@ function toStatus(value) {
   return normalized;
 }
 
+function normalizeStatusFilter(value) {
+  if (value == null || String(value).trim() === "") {
+    return null;
+  }
+
+  const normalized = String(value).trim().toUpperCase();
+
+  if (normalized === "TRUE" || normalized === "AVAILABLE") {
+    return "ACTIVE";
+  }
+
+  if (normalized === "FALSE" || normalized === "UNAVAILABLE") {
+    return "INACTIVE";
+  }
+
+  return normalized;
+}
+
 export async function getCourts(req, res) {
   const { branchId, managerAccountId, status } = req.query;
   let rows = await list("badmintonCourts");
@@ -27,7 +45,10 @@ export async function getCourts(req, res) {
   }
 
   if (status && String(status).toLowerCase() !== "all") {
-    rows = rows.filter((item) => item.status.toLowerCase() === String(status).toLowerCase());
+    const normalizedStatus = normalizeStatusFilter(status);
+    rows = rows.filter(
+      (item) => String(item.status || "").toUpperCase() === normalizedStatus,
+    );
   }
 
   return ok(res, rows);

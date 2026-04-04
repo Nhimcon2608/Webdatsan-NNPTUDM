@@ -7,15 +7,38 @@ const paymentService = {
     payWithMomo: async (paymentRequest) => {
         const res = await apiClient.post(apiRoutes.payments.links, paymentRequest);
         const data = unwrapApiData(res);
-        window.location.href = data?.payUrl;
+        window.location.assign(data?.payUrl);
     },
-    
-    getResIdsByOrderId: async (orderId) => {
+
+    getPaymentsByOrderId: async (orderId) => {
         try {
 			const response = await apiClient.get(apiRoutes.payments.root, {
 				params: { orderId },
 			});
-			return (unwrapApiData(response) || []).map((payment) => payment.reservationId).filter(Boolean);
+			return unwrapApiData(response) || [];
+		} catch (error) {
+			console.error(`Error fetching payments: `, error);
+			throw error;
+		}
+    },
+    
+    getResIdsByOrderId: async (orderId) => {
+        try {
+			const payments = await paymentService.getPaymentsByOrderId(orderId);
+			return [
+				...new Set(
+					payments.flatMap((payment) => {
+						const reservationIds = Array.isArray(payment?.reservationIds)
+							? payment.reservationIds
+							: [];
+
+						return [
+							...reservationIds,
+							...(payment?.reservationId ? [payment.reservationId] : []),
+						].filter(Boolean);
+					})
+				),
+			];
 		} catch (error) {
 			console.error(`Error fetching ids: `, error);
 			throw error;

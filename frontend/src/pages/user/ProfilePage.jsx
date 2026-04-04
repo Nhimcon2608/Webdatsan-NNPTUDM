@@ -72,7 +72,21 @@ import userService from '../../services/userService';
 import reservationService from '../../services/reservationService';
 import reviewService from '../../services/reviewService';
 import branchService from '../../services/branchServce'
+import { resolveBackendUrl } from '../../services/api';
 
+const mapReviewsWithBranchName = (reviewRows = [], branchRows = []) => {
+	const branchMap = {};
+	(Array.isArray(branchRows) ? branchRows : []).forEach((branch) => {
+		branchMap[branch.id] = branch.branchName;
+	});
+
+	return (Array.isArray(reviewRows) ? reviewRows : []).map((review) => ({
+		...review,
+		branchName: branchMap[review.branchId] || 'Unknown',
+	}));
+};
+
+const unwrapPayload = (response) => response?.data?.data ?? response?.data ?? response ?? null;
 
 const ProfilePage = () => {
 	const theme = useTheme();
@@ -86,7 +100,7 @@ const ProfilePage = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [reservations, setReservations] = useState([]);
 	const [reviews, setReviews] = useState([]);
-	const [branches, setBranches] = useState({});
+	const [branches, setBranches] = useState([]);
 	const [passwordData, setPasswordData] = useState({
 		currentPassword: '',
 		newPassword: '',
@@ -116,13 +130,30 @@ const ProfilePage = () => {
 
 	const [isOpenChangePasswordModal, setOpenChangePasswordModal] = useState(false);
 
+	const buildInputProps = (shouldDisableUnderline) => ({
+		style: { minHeight: '56px' },
+		...(shouldDisableUnderline ? { disableUnderline: true } : {}),
+	});
+
+	const resolveAvatarSrc = () => {
+		if (editMode && editedProfile?.imagePath) {
+			return editedProfile.imagePath;
+		}
+
+		if (account?.imagePath) {
+			return resolveBackendUrl(account.imagePath);
+		}
+
+		return "/default-avatar.jpg";
+	};
+
 
 	useEffect(() => {
 		const fetchData = async () => {
 			setIsLoading(true);
 			try {
-				const accountData = (await userService.getAccount()).data;
-				const profileData = (await userService.getProfile(accountData.id)).data;
+				const accountData = unwrapPayload(await userService.getAccount());
+				const profileData = unwrapPayload(await userService.getProfile(accountData?.id));
 				const reservationsData = (await reservationService.getAllReservationsOfUser('all'));
 				const reviewsData = (await reviewService.getAllReviewsOfUser());
 				const branchesData = await branchService.getAllBranches('all');
@@ -147,12 +178,7 @@ const ProfilePage = () => {
 						branchName: branchMap[r.branchId] || 'Unknown'
 					};
 				}));
-				setReviews(reviewsData.map(r => {
-					return {
-						...r,
-						branchName: branchMap[r.branchId] || 'Unknown'
-					};
-				}));
+				setReviews(mapReviewsWithBranchName(reviewsData, branchesData));
 
 				setFilteredReservations(reservationsData);
 
@@ -191,10 +217,10 @@ const ProfilePage = () => {
 	useEffect(() => {
 		const fetchReviews = async () => {
 			const reviewsResponse = await reviewService.getAllReviewsOfUser();
-			setReviews(reviewsResponse);
+			setReviews(mapReviewsWithBranchName(reviewsResponse, branches));
 		};
 		fetchReviews();
-	}, [refreshFlag]);
+	}, [refreshFlag, branches]);
 
 	useEffect(() => {
 		const fetchBranch = async () => {
@@ -215,16 +241,22 @@ const ProfilePage = () => {
 	const handleSaveClick = async () => {
 		try {
 			let updatedProfile = { ...editedProfile };
+			delete updatedProfile.avatarFile;
 
 			if (editedProfile.avatarFile) {
 				const formData = new FormData();
 				formData.append('file', editedProfile.avatarFile);
 				const uploadResponse = await userService.uploadAvatar(formData);
-				updatedProfile.imagePath = uploadResponse.data;
+				const uploadedAccount = unwrapPayload(uploadResponse);
+				updatedProfile.imagePath = uploadedAccount?.imagePath || uploadedAccount?.avatarUrl || updatedProfile.imagePath;
 			}
 
 			await userService.updateProfile(updatedProfile);
-			setProfile(updatedProfile);
+			const refreshedAccount = unwrapPayload(await userService.getAccount());
+			const refreshedProfile = unwrapPayload(await userService.getProfile(refreshedAccount?.id));
+			setAccount(refreshedAccount);
+			setProfile(refreshedProfile);
+			setEditedProfile({ ...refreshedProfile });
 			setEditMode(false);
 			showSnackbar('Cập nhật thông tin thành công', 'success');
 		} catch (err) {
@@ -361,11 +393,7 @@ const ProfilePage = () => {
 										}}>
 											<Box sx={{ position: 'relative', mb: 1 }}>
 												<Avatar
-													src={
-														account?.imagePath
-															? (import.meta.env.VITE_API_URL + '/' + account.imagePath)
-															: "/default-avatar.jpg"
-													}
+													src={resolveAvatarSrc()}
 													sx={{
 														width: 150,
 														height: 150,
@@ -516,10 +544,7 @@ const ProfilePage = () => {
 															fullWidth
 															disabled={!editMode}
 															variant={editMode ? "outlined" : "filled"}
-															InputProps={{
-																disableUnderline: !editMode,
-																style: { minHeight: '56px' }
-															}}
+															InputProps={buildInputProps(!editMode)}
 															sx={{
 																mb: 1,
 																'& .MuiFilledInput-root': {
@@ -544,10 +569,7 @@ const ProfilePage = () => {
 															InputLabelProps={{
 																shrink: true,
 															}}
-															InputProps={{
-																disableUnderline: !editMode,
-																style: { minHeight: '56px' }
-															}}
+															InputProps={buildInputProps(!editMode)}
 															inputProps={{
 																min: "1900-01-01",
 																max: dayjs().subtract(7, 'year').format('YYYY-MM-DD')
@@ -632,10 +654,7 @@ const ProfilePage = () => {
 															fullWidth
 															disabled={true}
 															variant="filled"
-															InputProps={{
-																disableUnderline: true,
-																style: { minHeight: '56px' }
-															}}
+															InputProps={buildInputProps(true)}
 															sx={{
 																'& .MuiFilledInput-root': {
 																	backgroundColor: theme.palette.background.paper,
@@ -653,10 +672,7 @@ const ProfilePage = () => {
 															fullWidth
 															disabled={!editMode}
 															variant={editMode ? "outlined" : "filled"}
-															InputProps={{
-																disableUnderline: !editMode,
-																style: { minHeight: '56px' }
-															}}
+															InputProps={buildInputProps(!editMode)}
 															sx={{
 																'& .MuiFilledInput-root': {
 																	backgroundColor: editMode

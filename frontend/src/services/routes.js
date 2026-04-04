@@ -50,6 +50,9 @@ export const apiRoutes = {
 		root: '/reviews',
 		byId: (reviewId) => `/reviews/${reviewId}`,
 	},
+	notifications: {
+		stream: '/notifications/stream',
+	},
 	temporaryRecruitments: {
 		root: '/temporary-recruitments',
 		byId: (recruitmentId) => `/temporary-recruitments/${recruitmentId}`,
