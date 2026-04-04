@@ -4,9 +4,11 @@ import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
+import { handleMomoIpn } from "./controllers/paymentController.js";
 import routes from "./routes/index.js";
 import { notFoundHandler, errorHandler } from "./utils/errorHandlers.js";
 import { attachRequestContext } from "./utils/requestContext.js";
+import { getUploadsRoot } from "./utils/uploadStorage.js";
 
 dotenv.config();
 
@@ -31,10 +33,12 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 app.use(attachRequestContext);
+app.use("/uploads", express.static(getUploadsRoot()));
 
 app.get("/health", healthHandler);
 app.get(`${API_BASE_PATH}/health`, healthHandler);
 app.get(`${API_PREFIX}/health`, healthHandler);
+app.post(`${API_BASE_PATH}/payment/momo/ipn`, handleMomoIpn);
 app.use(API_PREFIX, routes);
 app.use(notFoundHandler);
 app.use(errorHandler);

@@ -126,6 +126,7 @@ const BranchDetail = () => {
 	const [currentTab, setCurrentTab] = useState(0);
 	const [branchDetail, setBranchDetail] = useState({
 		courts: [],
+		prices: [],
 		reviews: [],
 		vouchers: [],
 	});
@@ -217,16 +218,19 @@ const BranchDetail = () => {
 					throw new Error("Branch not found");
 				}
 
-				const reviews = await reviewService.getAllReviewsOfBranch(branchId);
-				const courts =
-					await badmintionCourtService.getAllCourtsOfBranchByStatus(
+				const [reviews, courts, vouchers, prices] = await Promise.all([
+					reviewService.getAllReviewsOfBranch(branchId),
+					badmintionCourtService.getAllCourtsOfBranchByStatus(
 						branchId,
 						"true"
-					);
-				const vouchers = await voucherService.getAllVouchersOfBranch(branchId);
+					),
+					voucherService.getAllVouchersOfBranch(branchId),
+					branchService.getAllPricesOfBranch(branchId),
+				]);
 
 				const updatedBranchInfor = {
 					...branchInfor,
+					prices,
 					reviews: reviews,
 					courts: courts,
 					vouchers: vouchers,
@@ -276,9 +280,9 @@ const BranchDetail = () => {
 				// console.log('Reservation Data:', reservationData);
 				// console.log('branch Detail', branchDetail);
 
-				const { minStartTime, maxEndTime } = getMinStartTimeAndMaxEndTime(
-					branchDetail.prices
-				);
+					const { minStartTime, maxEndTime } = getMinStartTimeAndMaxEndTime(
+						branchDetail.prices || []
+					);
 
 				const generateTimeSlots = () => {
 					const slots = [];
@@ -1109,8 +1113,6 @@ const BranchDetail = () => {
 		};
 
 		const reservationResponse = await reservationService.postReservation(reservationData);
-		// console.log('Reservation form data:', reservationResponse);
-		await reservationService.scheduleCancellation(reservationResponse.id);
 		const rentalDetails = getRentalDetails(bookingInfo, reservationResponse.id);
 		// console.log(rentalDetails);
 
@@ -1315,8 +1317,6 @@ const BranchDetail = () => {
 				? response
 				: response?.reservations || [];
 			// console.log("✅ Reservation IDs nhận được:", reservationIds);
-			await reservationService.scheduleCancellationListId(reservationIds);
-			console.log(payload);
 
 			// 9. Chuyển sang trang thanh toán
 			const paymentRequest = {
@@ -1640,7 +1640,7 @@ const BranchDetail = () => {
 											{booking.slots.length} khung giờ đã chọn
 										</Typography>
 										<Typography variant="body1" fontWeight="bold">
-											{branchDetail.prices.length
+											{branchDetail.prices?.length
 												? formatVND(booking.totalPrice)
 												: "-"}
 										</Typography>
@@ -1668,9 +1668,9 @@ const BranchDetail = () => {
 									Tổng tiền:
 								</Typography>
 								<Typography variant="h6" color="primary.main" fontWeight="bold">
-									{branchDetail.prices.length
-										? formatVND(calculateTotalPrice())
-										: "-"}
+										{branchDetail.prices?.length
+											? formatVND(calculateTotalPrice())
+											: "-"}
 								</Typography>
 							</Box>
 							<Box
@@ -2115,9 +2115,9 @@ const BranchDetail = () => {
 							Đã chọn {selectedSlots.length} khung giờ
 						</Typography>
 						<Typography variant="h6" color="primary.main" fontWeight="bold">
-							{branchDetail.prices.length
-								? formatVND(calculateTotalPrice())
-								: "-"}
+								{branchDetail.prices?.length
+									? formatVND(calculateTotalPrice())
+									: "-"}
 						</Typography>
 					</Box>
 					<Box sx={{ display: "flex", gap: 1 }}>

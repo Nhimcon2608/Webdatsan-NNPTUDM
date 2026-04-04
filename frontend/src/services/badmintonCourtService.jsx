@@ -20,13 +20,32 @@ function filterCourtsByStatus(courts, status) {
     return courts.filter((court) => String(court.status).toLowerCase() === normalizedStatus);
 }
 
+function toCourtStatusParam(status) {
+    const normalizedStatus = String(status || "all").trim().toLowerCase();
+
+    if (normalizedStatus === "all") {
+        return null;
+    }
+
+    if (normalizedStatus === "true" || normalizedStatus === "available" || normalizedStatus === "active") {
+        return "ACTIVE";
+    }
+
+    if (normalizedStatus === "false" || normalizedStatus === "unavailable" || normalizedStatus === "inactive") {
+        return "INACTIVE";
+    }
+
+    return String(status).trim().toUpperCase();
+}
+
 const badmintionCourtService = {
 
     getAllCourtsOfBranchByStatus: async (branchId, status) => {
         try {
             const params = { branchId };
-            if (status && String(status).toLowerCase() !== "all") {
-                params.status = status;
+            const statusParam = toCourtStatusParam(status);
+            if (statusParam) {
+                params.status = statusParam;
             }
             const response = await apiClient.get(apiRoutes.courts.root, { params });
             const courts = normalizeCourtList(unwrapApiData(response));

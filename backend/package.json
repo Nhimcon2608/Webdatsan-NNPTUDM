@@ -8,6 +8,7 @@
     "dev": "node --watch bin/www.js",
     "start": "node bin/www.js",
     "seed:defaults": "node scripts/seedDefaults.js",
+    "test:postman": "bash scripts/runPostmanAutomation.sh",
     "db:up": "docker compose up -d mongodb",
     "db:down": "docker compose down"
   },

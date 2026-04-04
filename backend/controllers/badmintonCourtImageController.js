@@ -1,5 +1,6 @@
 import { created, ok } from "../utils/response.js";
 import { list, updateById } from "../utils/store.js";
+import { deleteUploadedFile, persistUploadedFile } from "../utils/uploadStorage.js";
 
 function getUploadedFile(req) {
   return req.file || req.files?.[0] || null;
@@ -18,12 +19,13 @@ export async function uploadCourtImage(req, res) {
   }
 
   const file = getUploadedFile(req);
+  const imagePath =
+    (await persistUploadedFile(file, ["courts", badmintonCourtId])) || req.body?.url || "";
   const image = {
     id: `img-${Date.now()}`,
     name: file?.originalname || req.body?.imageName || "court-image",
-    url: file?.originalname
-      ? `/uploads/courts/${badmintonCourtId}/${file.originalname}`
-      : req.body?.url || "",
+    imagePath,
+    url: imagePath,
   };
 
   const updated = await updateById("badmintonCourts", badmintonCourtId, {
@@ -41,7 +43,10 @@ export async function deleteCourtImage(req, res) {
     return res.status(404).json({ success: false, message: "Court not found" });
   }
 
+  const imageToDelete = (court.images || []).find((img) => img.id === imageId);
   const images = (court.images || []).filter((img) => img.id !== imageId);
+
+  await deleteUploadedFile(imageToDelete?.imagePath || imageToDelete?.url);
   const updated = await updateById("badmintonCourts", badmintonCourtId, { images });
 
   return ok(res, updated, "Court image deleted");
