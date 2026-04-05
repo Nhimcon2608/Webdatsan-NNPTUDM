@@ -21,12 +21,15 @@ import {
 	Search as SearchIcon,
 	Refresh as RefreshIcon,
 	SportsTennis,
+	Add as AddIcon,
 } from "@mui/icons-material";
 import CourtCard from "./CourtCard";
 import BadmintonIcon from "../../../components/common/BadmintonIcon";
 import badmintionCourtService from "../../../services/badmintonCourtService";
 import authService from "../../../services/authService";
+import branchService from "../../../services/branchServce";
 import reservationDetailService from "../../../services/reservationDetailService";
+import AddCourtModal from "../../admin/BranchDetailPage/AddCourtModal";
 
 const Courts = () => {
 	const theme = useTheme();
@@ -38,6 +41,11 @@ const Courts = () => {
 	const [error, setError] = useState(null);
 	const [search, setSearch] = useState("");
 	const [filterStatus, setFilterStatus] = useState("ALL");
+	const [openAddCourtModal, setOpenAddCourtModal] = useState(false);
+	const [managerContext, setManagerContext] = useState({
+		accountId: "",
+		branchId: "",
+	});
 
 	// === FETCH COURTS ===
 	const fetchCourts = useCallback(async () => {
@@ -48,10 +56,15 @@ const Courts = () => {
 			if (!token) throw new Error("Vui lòng đăng nhập lại.");
 
 			const account = await authService.getCurrentAccount(token);
+			const branch = await branchService.getBranchByAccountId(account.id, token);
 			const data = await badmintionCourtService.getCourtsByManager(account.id, token);
 
 			const sortedData = (data || []).sort((a, b) => a.ordinalNumber - b.ordinalNumber);
 
+			setManagerContext({
+				accountId: account.id || "",
+				branchId: branch?.id || "",
+			});
 			setCourts(sortedData);
 		} catch (err) {
 			setError(err.message || "Không thể tải danh sách sân.");
@@ -97,6 +110,19 @@ const Courts = () => {
 	const handleClearFilters = () => {
 		setSearch("");
 		setFilterStatus("ALL");
+	};
+
+	const handleAddCourtSubmit = async (courtData) => {
+		if (!managerContext.branchId) {
+			throw new Error("Không tìm thấy chi nhánh của quản lý.");
+		}
+
+		await badmintionCourtService.addCourt({
+			...courtData,
+			branchId: managerContext.branchId,
+			managerAccountId: managerContext.accountId,
+		});
+		await fetchCourts();
 	};
 
 	return (
@@ -188,6 +214,18 @@ const Courts = () => {
 						>
 							Làm mới
 						</Button>
+
+						<Button
+							variant="contained"
+							color="success"
+							startIcon={<AddIcon />}
+							onClick={() => setOpenAddCourtModal(true)}
+							size="small"
+							disabled={!managerContext.branchId}
+							sx={{ whiteSpace: "nowrap", minWidth: 140 }}
+						>
+							Thêm sân
+						</Button>
 					</Stack>
 				</Stack>
 			</Box>
@@ -228,6 +266,15 @@ const Courts = () => {
 					))}
 				</Box>
 			)}
+
+			<AddCourtModal
+				open={openAddCourtModal}
+				onClose={() => setOpenAddCourtModal(false)}
+				branchId={managerContext.branchId}
+				managerAccountId={managerContext.accountId}
+				onSubmit={handleAddCourtSubmit}
+				existedCourt={courts.map((court) => court.ordinalNumber)}
+			/>
 		</Container>
 	);
 };

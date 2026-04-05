@@ -1,5 +1,5 @@
 import { created, ok } from "../utils/response.js";
-import { insert, list, updateById } from "../utils/store.js";
+import { findById, insert, list, updateById } from "../utils/store.js";
 
 function toStatus(value) {
   if (typeof value === "boolean") {
@@ -30,6 +30,31 @@ function normalizeStatusFilter(value) {
   }
 
   return normalized;
+}
+
+function inferOrdinalNumber(court) {
+  if (court?.ordinalNumber != null && court.ordinalNumber !== "") {
+    const parsed = Number(court.ordinalNumber);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  const matched = String(court?.name || "").match(/(\d+)/);
+  if (matched) {
+    return Number(matched[1]);
+  }
+
+  return null;
+}
+
+function toOrdinalNumber(value) {
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  return parsed;
 }
 
 export async function getCourts(req, res) {
@@ -79,10 +104,69 @@ export async function updateCourt(req, res) {
 
 export async function createCourt(req, res) {
   const payload = req.body || {};
+  const branchId = String(payload.branchId || "").trim();
+  const ordinalNumber = toOrdinalNumber(payload.ordinalNumber);
+  const { available, ...restPayload } = payload;
+
+  if (!branchId) {
+    return res.status(400).json({
+      success: false,
+      message: "Branch ID is required",
+    });
+  }
+
+  if (!ordinalNumber) {
+    return res.status(400).json({
+      success: false,
+      message: "Ordinal number must be a positive integer",
+    });
+  }
+
+  const branch = await findById("branches", branchId);
+  if (!branch) {
+    return res.status(404).json({
+      success: false,
+      message: "Branch not found",
+    });
+  }
+
+  if (
+    req.context?.role === "MANAGER" &&
+    branch.managerAccountId &&
+    branch.managerAccountId !== req.context.accountId
+  ) {
+    return res.status(403).json({
+      success: false,
+      message: "Forbidden",
+    });
+  }
+
+  const existingCourts = await list("badmintonCourts");
+  const duplicatedCourt = existingCourts.find(
+    (item) => item.branchId === branchId && inferOrdinalNumber(item) === ordinalNumber,
+  );
+
+  if (duplicatedCourt) {
+    return res.status(409).json({
+      success: false,
+      message: "Court ordinal number already exists in this branch",
+    });
+  }
+
+  const managerAccountId = String(
+    restPayload.managerAccountId ||
+      branch.managerAccountId ||
+      (req.context?.role === "MANAGER" ? req.context.accountId : ""),
+  ).trim();
+  const status = toStatus(restPayload.status ?? available) || "ACTIVE";
   const createdCourt = await insert("badmintonCourts", {
-    ...payload,
-    status: payload.status || "ACTIVE",
-    images: payload.images || [],
+    ...restPayload,
+    branchId,
+    ordinalNumber,
+    managerAccountId,
+    name: restPayload.name || `Sân ${ordinalNumber}`,
+    status,
+    images: Array.isArray(restPayload.images) ? restPayload.images : [],
   });
 
   return created(res, createdCourt, "Court created");

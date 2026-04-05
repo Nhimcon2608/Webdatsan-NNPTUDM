@@ -15,16 +15,19 @@ const AddCourtModal = ({
     open,
     onClose,
     branchId,
+    managerAccountId,
     onSubmit,
     existedCourt = []
 }) => {
     const [formData, setFormData] = useState({
         ordinalNumber: '',
         available: true,
-        branchId: branchId
+        branchId: branchId || '',
+        managerAccountId: managerAccountId || ''
     });
     const [error, setError] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -48,14 +51,45 @@ const AddCourtModal = ({
         }
     }, [formData.ordinalNumber, existedCourt]);
 
-    const handleSubmit = () => {
-        if (error) return;
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
 
-        onSubmit({
-            ...formData,
-            ordinalNumber: parseInt(formData.ordinalNumber)
+        setFormData({
+            ordinalNumber: '',
+            available: true,
+            branchId: branchId || '',
+            managerAccountId: managerAccountId || ''
         });
-        onClose();
+        setError(false);
+        setErrorMessage('');
+    }, [open, branchId, managerAccountId]);
+
+    const handleSubmit = async () => {
+        if (error || !branchId) {
+            return;
+        }
+
+        setSubmitting(true);
+        try {
+            await onSubmit({
+                ...formData,
+                branchId: branchId || formData.branchId,
+                managerAccountId: managerAccountId || formData.managerAccountId,
+                ordinalNumber: parseInt(formData.ordinalNumber, 10)
+            });
+            onClose();
+        } catch (submitError) {
+            setError(true);
+            setErrorMessage(
+                submitError?.response?.data?.message ||
+                submitError?.message ||
+                'Thêm sân thất bại'
+            );
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -86,11 +120,11 @@ const AddCourtModal = ({
                         onChange={handleChange}
                         slotProps={{
                             htmlInput: {
-                                minL: 1
+                                min: 1
                             },
                             formHelperText: {
                                 sx: {
-                                    olor: 'error.main'
+                                    color: 'error.main'
                                 }
                             }
                         }}
@@ -116,9 +150,9 @@ const AddCourtModal = ({
                 <Button
                     variant="contained"
                     onClick={handleSubmit}
-                    disabled={!formData.ordinalNumber || error}
+                    disabled={!formData.ordinalNumber || error || !branchId || submitting}
                 >
-                    Thêm sân
+                    {submitting ? 'Đang thêm...' : 'Thêm sân'}
                 </Button>
             </DialogActions>
         </Dialog>
