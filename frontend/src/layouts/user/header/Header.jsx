@@ -35,6 +35,7 @@ import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { CircleFadingPlus } from 'lucide-react';
 
 import authService from '../../../services/authService';
+import { resolveBackendUrl } from '../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import BadmintonIcon from '../../../components/common/BadmintonIcon';
 
@@ -164,7 +165,7 @@ const Header = () => {
 					}}>
 						{user.imagePath ? (
 							<Avatar
-								src={`${import.meta.env.VITE_API_URL}/${user.imagePath}`}
+								src={resolveBackendUrl(user.imagePath)}
 								alt={user.username}
 								sx={{ width: 40, height: 40 }}
 							/>
@@ -310,7 +311,7 @@ const Header = () => {
 									<IconButton onClick={() => navigate('/profile')}>
 										{user.imagePath ? (
 											<Avatar
-												src={`${import.meta.env.VITE_API_URL}/${user.imagePath}`}
+												src={resolveBackendUrl(user.imagePath)}
 												sx={{ width: 40, height: 40, border: `2px solid ${theme.palette.primary.main}` }}
 											/>
 										) : (

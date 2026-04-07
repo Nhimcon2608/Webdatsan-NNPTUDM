@@ -40,6 +40,7 @@ import temporaryRegistrationService from "../../../services/temporaryRegistratio
 import temporaryRecruitmentSavedService from "../../../services/temporaryRecruitmentSavedService";
 import LoginModal from "../../../components/modal/LoginModal";
 import authService from "../../../services/authService";
+import { resolveBackendUrl } from "../../../services/api";
 
 
 const TemporaryRecruitmentDetailSharePage = () => {
@@ -230,7 +231,7 @@ const TemporaryRecruitmentDetailSharePage = () => {
                         {
                             data.imagePath ? (
                                 <Avatar
-                                    src={`${import.meta.env.VITE_API_URL}/${data.imagePath}`}
+                                    src={resolveBackendUrl(data.imagePath)}
                                     sx={{ width: 56, height: 56, mr: 2 }}
                                 />
                             ) : (

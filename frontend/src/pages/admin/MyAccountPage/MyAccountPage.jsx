@@ -29,6 +29,7 @@ import { useSnackbar } from '../../../../context/SnackbarContext';
 import ChangePasswordModal from '../../../components/modal/ChangePasswordModal';
 
 import userService from '../../../services/userService';
+import { resolveBackendUrl } from '../../../services/api';
 
 
 const MyAccountPage = () => {
@@ -57,7 +58,7 @@ const MyAccountPage = () => {
             await userService.uploadAvatar(formData);
             await login();
             showSnackbar('Đổi avatar thành công', 'success');
-        } catch (error) {
+        } catch {
             showSnackbar('Đổi avatar thất bại', 'error');
         }
     };
@@ -124,7 +125,7 @@ const MyAccountPage = () => {
                                 >
                                     {displayImage ? (
                                         <Avatar
-                                            src={`${import.meta.env.VITE_API_URL}/${displayImage}`}
+                                            src={resolveBackendUrl(displayImage)}
                                             alt={displayName}
                                             sx={{
                                                 width: 100,

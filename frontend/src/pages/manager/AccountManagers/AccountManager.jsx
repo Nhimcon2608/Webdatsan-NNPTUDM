@@ -35,6 +35,7 @@ import {
 import { useAuth } from "../../../../context/AuthContext";
 import ChangePasswordModal from "../../../components/modal/ChangePasswordModal";
 import authService from "../../../services/authService";
+import { resolveBackendUrl } from "../../../services/api";
 import managerService from "../../../services/managerService";
 
 const AccountProfile = () => {
@@ -58,7 +59,7 @@ const AccountProfile = () => {
 				const u = await authService.getCurrentAccount(token);
 				setUser(u);
 				setPhoneNumber(u.phoneNumber || "");
-			} catch (err) {
+			} catch {
 				setSnackbar({ open: true, message: "Không tải được thông tin", severity: "error" });
 			} finally {
 				setLoading(false);
@@ -90,7 +91,7 @@ const AccountProfile = () => {
 		formData.append("file", file);
 		try {
 			const res = await managerService.uploadAvatar(formData, token);
-			setUser(prev => ({ ...prev, imagePath: res.imagePath }));
+			setUser(prev => ({ ...prev, imagePath: res.imagePath, avatarUrl: res.avatarUrl }));
 			setSnackbar({ open: true, message: "Đổi avatar thành công!", severity: "success" });
 			setIsImageDialogOpen(false);
 		} catch {
@@ -136,7 +137,7 @@ const AccountProfile = () => {
 								<Box position="relative" display="inline-block">
 									<Avatar
 										alt={user?.username}
-										src={user?.imagePath ? `${import.meta.env.VITE_API_URL}/${user.imagePath}` : ""}
+										src={resolveBackendUrl(user?.imagePath || user?.avatarUrl || "")}
 										sx={{
 											width: 180,
 											height: 180,

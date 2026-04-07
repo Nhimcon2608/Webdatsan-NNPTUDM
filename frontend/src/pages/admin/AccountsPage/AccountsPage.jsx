@@ -20,6 +20,7 @@ import {
 
 import adminTheme from '../../../theme/adminTheme';
 import adminAccountService from '../../../services/adminAccountService';
+import { resolveBackendUrl } from '../../../services/api';
 
 const roleLabels = {
     ADMIN: 'Admin',
@@ -169,7 +170,7 @@ const AccountsPage = () => {
                                 <TableRow key={account.id} hover>
                                     <TableCell>
                                         <Stack direction="row" spacing={2} alignItems="center">
-                                            <Avatar src={account.imagePath ? `${import.meta.env.VITE_API_URL}/${account.imagePath}` : ''}>
+                                            <Avatar src={resolveBackendUrl(account.imagePath || account.avatarUrl || '')}>
                                                 {(account.username || account.fullName || account.email || 'A').charAt(0).toUpperCase()}
                                             </Avatar>
                                             <Box>

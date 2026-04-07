@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
 	Box,
 	CssBaseline,
@@ -113,6 +113,9 @@ const ManagerLayout = () => {
 	const sidebarUser = {
 		name: user?.fullName || user?.username || "Chủ sân",
 		role: user?.role || "MANAGER",
+		email: user?.email || "",
+		imagePath: user?.imagePath || "",
+		avatarUrl: user?.avatarUrl || "",
 	};
 
 	return (

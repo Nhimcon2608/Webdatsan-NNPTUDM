@@ -97,6 +97,7 @@ import userService from "../../services/userService";
 import authService from "../../services/authService";
 import priceService from "../../services/priceService";
 import paymentService from "../../services/paymentService"
+import { resolveBackendUrl } from "../../services/api";
 import { useAuth } from "../../../context/AuthContext";
 
 import UserLayout from "../../layouts/user/UserLayout";
@@ -2441,8 +2442,7 @@ const BranchDetail = () => {
 												height={isMobile ? 200 : isTablet ? 200 : 350}
 												image={
 													branchDetail.imagePath
-														? `${import.meta.env.VITE_API_URL}/${branchDetail.imagePath
-														}`
+														? resolveBackendUrl(branchDetail.imagePath)
 														: "/images/default/branch-default-image.jpg"
 												}
 												alt={`Hình ảnh của ${branchDetail.branchName}`}
@@ -2911,11 +2911,9 @@ const BranchDetail = () => {
 															<CardMedia
 																component="img"
 																height={isMobile ? 240 : isTablet ? 340 : 460}
-																image={`${import.meta.env.VITE_API_URL}/${branchDetail.courts[selectedCourtIndex].images[
+																image={resolveBackendUrl(branchDetail.courts[selectedCourtIndex].images[
 																	courtImageIndices[branchDetail.courts[selectedCourtIndex].id] || 0
-																].imagePath
-																	}`
-																}
+																].imagePath)}
 																alt={`Sân số ${branchDetail.courts[selectedCourtIndex].ordinalNumber}`}
 																sx={{
 																	objectFit: "cover",

@@ -25,6 +25,7 @@ import { formatDateForDisplay, formatDateOnly } from "../../utils/format";
 import { stringToColor } from '../../utils/stringToColor';
 import temporaryRecruitmentSavedService from "../../services/temporaryRecruitmentSavedService";
 import authService from "../../services/authService";
+import { resolveBackendUrl } from "../../services/api";
 import { useSnackbar } from "../../../context/SnackbarContext";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -140,7 +141,7 @@ const TemporaryRecruitmentPostItem = ({
                     avatar={
                         item?.imagePath ? (
                             <Avatar
-                                src={`${import.meta.env.VITE_API_URL}/${item.imagePath}`}
+                                src={resolveBackendUrl(item.imagePath)}
                                 alt={displayName}
                                 sx={{ width: 40, height: 40 }}
                             />

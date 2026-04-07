@@ -29,6 +29,7 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import { useAuth } from "../../../context/AuthContext";
+import { resolveBackendUrl } from "../../services/api";
 
 const drawerWidth = 240;
 const collapsedWidth = 80;
@@ -46,6 +47,8 @@ const Sidebar = ({ user, theme, toggleTheme, isCollapsed: parentCollapsed, onTog
 	const location = useLocation();
 	const navigate = useNavigate();
 	const { logout } = useAuth();
+	const displayName = user?.name || user?.fullName || user?.username || user?.email || "Manager";
+	const displayImage = user?.imagePath || user?.avatarUrl || "";
 
 	const isCollapsed = parentCollapsed;
 	const toggleCollapse = onToggleCollapse;
@@ -95,6 +98,8 @@ const Sidebar = ({ user, theme, toggleTheme, isCollapsed: parentCollapsed, onTog
 				<Box sx={{ px: 2, py: 1 }}>
 					<Stack direction="row" spacing={2} alignItems="center">
 						<Avatar
+							src={resolveBackendUrl(displayImage)}
+							alt={displayName}
 							sx={{
 								bgcolor: "primary.main",
 								color: "primary.contrastText",
@@ -102,11 +107,11 @@ const Sidebar = ({ user, theme, toggleTheme, isCollapsed: parentCollapsed, onTog
 								"&:hover": { transform: "scale(1.1)" },
 							}}
 						>
-							{user?.name?.[0] || "M"}
+							{displayName[0] || "M"}
 						</Avatar>
 						<Box>
 							<Typography variant="subtitle1" fontWeight="600" color="text.primary">
-								{user?.name || "Manager"}
+								{displayName}
 							</Typography>
 							<Typography variant="body2" color="text.secondary" sx={{ fontStyle: "italic" }}>
 								{user?.role || "Administrator"}
@@ -120,7 +125,7 @@ const Sidebar = ({ user, theme, toggleTheme, isCollapsed: parentCollapsed, onTog
 
 			{/* MENU ITEMS */}
 			<List sx={{ flexGrow: 1 }}>
-				{memoizedMenuItems.map(({ text, icon, path, badge }) => {
+				{memoizedMenuItems.map(({ text, icon, path }) => {
 					const selected = location.pathname === path;
 					return (
 						<Tooltip key={path} title={isCollapsed ? text : ""} placement="right">

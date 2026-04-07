@@ -30,6 +30,7 @@ import {
 } from '@mui/icons-material';
 
 import { stringToColor } from '../../../utils/stringToColor';
+import { resolveBackendUrl } from '../../../services/api';
 
 
 const BranchList = ({ branches }) => {
@@ -261,7 +262,7 @@ const BranchList = ({ branches }) => {
                                                                 transform: 'scale(1.05)'
                                                             }
                                                         }}
-                                                        src={`${import.meta.env.VITE_API_URL}/${branch.imagePath}`}
+                                                        src={resolveBackendUrl(branch.imagePath)}
                                                         alt={branch.branchName}
                                                         loading="lazy"
                                                     />

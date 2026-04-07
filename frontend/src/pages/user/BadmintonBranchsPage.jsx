@@ -33,6 +33,7 @@ import theme from '../../theme/Theme';
 import branchService from '../../services/branchServce';
 import reviewService from '../../services/reviewService';
 import badmintionCourtService from '../../services/badmintonCourtService';
+import { resolveBackendUrl } from '../../services/api';
 
 
 const filterCategories = [
@@ -420,7 +421,7 @@ const BadmintonBranchsPage = () => {
 											<CardMedia
 												component="img"
 												height="180"
-												image={branch.image ? `${import.meta.env.VITE_API_URL}/${branch.image}` : '/images/default/branch-default-image.jpg'}
+												image={branch.image ? resolveBackendUrl(branch.image) : '/images/default/branch-default-image.jpg'}
 												alt={branch.name}
 												sx={{
 													height: 180,
