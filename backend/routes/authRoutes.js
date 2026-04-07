@@ -1,3 +1,4 @@
+// Route xác thực cho login, register và logout.
 import { Router } from "../utils/router.js";
 
 import { login, logout, register } from "../controllers/authController.js";

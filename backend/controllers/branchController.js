@@ -1,3 +1,4 @@
+// Xử lý CRUD branch, serialize branch và cập nhật ảnh branch.
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 import { serializeBranch } from "../utils/branchView.js";
@@ -14,6 +15,7 @@ function getUploadedFile(req) {
   return req.file || req.files?.[0] || null;
 }
 
+// Response branch được làm giàu thêm bằng dữ liệu owner và partnership request.
 async function loadBranchContext() {
   const [owners, partnershipRequests] = await Promise.all([
     list("owners"),
@@ -45,6 +47,7 @@ function serializeBranches(branches, context) {
 }
 
 export async function getBranches(req, res) {
+  // Danh sách branch hỗ trợ các filter nhẹ dùng cho màn admin, manager và user.
   const { isCooperated, partnershipRequestId, managerAccountId } = req.query;
   let branches = await list("branches");
 
@@ -74,6 +77,7 @@ export async function getBranchById(req, res) {
 }
 
 export async function createBranch(req, res) {
+  // Khi tạo mới cũng chuẩn hóa field legacy để frontend và backend vẫn tương thích.
   const createdBranch = await insert("branches", {
     ...req.body,
     name: req.body?.name || req.body?.branchName,
@@ -87,6 +91,7 @@ export async function createBranch(req, res) {
 }
 
 export async function updateBranch(req, res) {
+  // Manager chỉ được sửa branch của mình, còn admin có thể sửa mọi branch.
   const { branchId } = req.params;
   const existing = await findById("branches", branchId);
   if (!existing) {
@@ -101,6 +106,7 @@ export async function updateBranch(req, res) {
     return res.status(403).json({ success: false, message: "Forbidden" });
   }
 
+  // Ảnh branch được lưu dưới /uploads và ảnh cũ sẽ bị xóa sau khi thay thành công.
   const file = getUploadedFile(req);
   const uploadedImagePath = file
     ? await persistUploadedFile(file, ["branches", branchId])

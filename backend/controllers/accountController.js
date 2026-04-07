@@ -1,8 +1,10 @@
+// Xử lý đọc/sửa profile account, đổi mật khẩu và upload avatar.
 import { ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 import { toPublicAccount } from "../utils/accountView.js";
 import { persistUploadedFile } from "../utils/uploadStorage.js";
 
+// Các endpoint của account luôn lấy account hiện tại từ request context.
 function resolveAccountId(req) {
   return req.context.accountId || null;
 }

@@ -1,3 +1,4 @@
+// Đọc và ghi review của người dùng cho branch.
 import { created, ok } from "../utils/response.js";
 import { getRequestAccount } from "../middleware/auth.js";
 import { insert, list, updateById } from "../utils/store.js";

@@ -1,3 +1,4 @@
+// Các helper view của reservation chuẩn hóa dữ liệu booking thô thành dạng frontend dùng được.
 function toHourNumber(value) {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -97,6 +98,7 @@ function resolvePlayerName(reservation, accounts, players) {
 }
 
 export function buildReservationDetailsMap(details) {
+  // Gom reservation detail một lần để controller serialize booking hiệu quả hơn.
   const detailsMap = new Map();
 
   for (const detail of details) {

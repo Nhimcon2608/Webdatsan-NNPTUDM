@@ -1,3 +1,4 @@
+// Script tiện ích để khởi tạo database và in ra các tài khoản mặc định.
 import dotenv from "dotenv";
 
 import { connectToDatabase, getCollection } from "../utils/database.js";

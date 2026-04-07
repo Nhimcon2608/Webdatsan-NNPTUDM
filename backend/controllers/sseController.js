@@ -1,3 +1,4 @@
+// Giữ một kết nối SSE nhẹ để đẩy thông báo kiểu realtime.
 export function subscribe(req, res) {
   const userId = req.query.userId || req.context.accountId;
 

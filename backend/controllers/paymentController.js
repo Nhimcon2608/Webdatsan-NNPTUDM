@@ -1,3 +1,4 @@
+// Xử lý bản ghi hóa đơn, tạo link thanh toán MoMo và đồng bộ IPN callback.
 import { createHmac } from "crypto";
 
 import { created, ok } from "../utils/response.js";
@@ -7,6 +8,7 @@ import { findById, insert, list, updateById } from "../utils/store.js";
 const MOMO_SUCCESS_CODE = 0;
 const MOMO_AUTHORIZED_CODE = 9000;
 
+// Các helper MoMo gom phần config, chữ ký và map kết quả về một chỗ.
 function toArray(value) {
   return Array.isArray(value) ? value : value ? [value] : [];
 }
@@ -121,6 +123,7 @@ async function findPaymentsByOrderId(orderId) {
 }
 
 async function syncPaymentAndReservations(paymentRows, momoPayload) {
+  // Callback từ provider sẽ cập nhật cả payment lẫn các reservation liên kết.
   const paymentStatus = mapMomoResultToPaymentStatus(momoPayload.resultCode);
   const reservationStatus = mapMomoResultToReservationStatus(momoPayload.resultCode);
   const paidAt =
@@ -162,6 +165,7 @@ async function syncPaymentAndReservations(paymentRows, momoPayload) {
 }
 
 export async function getPayments(req, res) {
+  // Nhân sự có thể duyệt payment, còn lookup theo orderId phục vụ luồng trả kết quả thanh toán.
   const { branchId, reservationId, orderId } = req.query;
   let rows = await list("payments");
 
@@ -194,6 +198,7 @@ export async function getPayments(req, res) {
 }
 
 export async function createPayment(req, res) {
+  // Endpoint này tạo một bản ghi payment kiểu hóa đơn nội bộ cho một reservation.
   const { reservationId } = req.body || {};
   if (!reservationId) {
     return res.status(400).json({ success: false, message: "reservationId is required" });
@@ -234,6 +239,7 @@ export async function updatePayment(req, res) {
 }
 
 export async function createPaymentLink(req, res) {
+  // Chỉ cho tạo payment link khi mọi reservation đều thuộc user hiện tại và cùng một branch.
   const config = getMomoConfig();
   if (!isMomoConfigured(config)) {
     return res.status(500).json({
@@ -302,6 +308,7 @@ export async function createPaymentLink(req, res) {
     autoCapture: true,
   };
 
+  // Payload gửi sang provider sẽ được ký trước khi gọi MoMo.
   momoPayload.signature = buildMomoCreateSignature(
     momoPayload,
     config.accessKey,
@@ -366,6 +373,7 @@ export async function createPaymentLink(req, res) {
 }
 
 export async function handleMomoIpn(req, res) {
+  // IPN callback sẽ được kiểm tra, match theo orderId rồi dùng để đồng bộ trạng thái nội bộ.
   const config = getMomoConfig();
   const payload = req.body || {};
 

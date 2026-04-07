@@ -1,3 +1,4 @@
+// Chỉ khởi động HTTP server sau khi MongoDB đã sẵn sàng.
 import http from "http";
 import app from "../app.js";
 import { connectToDatabase } from "../utils/database.js";
@@ -6,6 +7,7 @@ const port = Number(process.env.PORT || 8080);
 app.set("port", port);
 
 try {
+  // Dừng sớm nếu database không khởi tạo được.
   await connectToDatabase();
 
   const server = http.createServer(app);

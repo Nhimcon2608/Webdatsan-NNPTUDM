@@ -1,3 +1,4 @@
+// Route upload và xóa ảnh gắn với một badminton court.
 import { Router } from "../utils/router.js";
 import multer from "multer";
 
@@ -10,6 +11,7 @@ import { requireRoles } from "../middleware/auth.js";
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Ảnh sân chỉ cho admin và manager thao tác.
 router.post(
   "/:badmintonCourtId/images",
   requireRoles("ADMIN", "MANAGER"),

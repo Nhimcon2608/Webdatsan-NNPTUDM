@@ -1,3 +1,4 @@
+// Các schema zod dùng chung cho id, phân trang và trạng thái.
 import { z } from "zod";
 
 export const idParamSchema = z.object({

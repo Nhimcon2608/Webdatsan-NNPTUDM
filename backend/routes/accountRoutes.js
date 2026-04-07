@@ -1,3 +1,4 @@
+// Route account cho profile, mật khẩu, avatar và danh sách account của admin.
 import { Router } from "../utils/router.js";
 import multer from "multer";
 
@@ -13,6 +14,7 @@ import { requireAuth, requireRoles } from "../middleware/auth.js";
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Admin xem toàn bộ account, còn user đã đăng nhập quản lý hồ sơ của chính mình.
 router.get("/", requireRoles("ADMIN"), getAllAccounts);
 router.get("/me", requireAuth, getMe);
 router.patch("/me", requireAuth, updateAccount);

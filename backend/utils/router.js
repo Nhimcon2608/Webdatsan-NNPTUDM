@@ -1,3 +1,4 @@
+// Bọc Express Router để async handler tự động đẩy lỗi đi tiếp.
 import { Router as ExpressRouter } from "express";
 
 import { asyncHandler } from "./asyncHandler.js";
@@ -27,6 +28,7 @@ function wrapArgument(argument) {
 export function Router(...args) {
   const router = ExpressRouter(...args);
 
+  // Bọc từng method của router một lần để mọi route có cùng hành vi async.
   for (const method of METHODS) {
     const original = router[method].bind(router);
     router[method] = (...routeArgs) => original(...routeArgs.map(wrapArgument));

@@ -1,3 +1,4 @@
+// Controller CRUD cho voucher của branch và cập nhật trạng thái mã khuyến mãi.
 import { created, ok } from "../utils/response.js";
 import { insert, list, updateById } from "../utils/store.js";
 

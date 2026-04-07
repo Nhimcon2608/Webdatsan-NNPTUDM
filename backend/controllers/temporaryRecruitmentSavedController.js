@@ -1,3 +1,4 @@
+// Quản lý danh sách temporary recruitment đã lưu của từng user.
 import { created, ok } from "../utils/response.js";
 import { insert, list, removeById } from "../utils/store.js";
 import {

@@ -1,3 +1,4 @@
+// Đọc token/header một lần rồi gắn auth context gọn nhẹ vào request.
 export function attachRequestContext(req, _res, next) {
   const authHeader = req.headers.authorization || "";
   const headerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;

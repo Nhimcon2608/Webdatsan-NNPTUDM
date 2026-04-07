@@ -1,3 +1,4 @@
+// Route SSE giữ kết nối realtime một chiều cho thông báo.
 import { Router } from "../utils/router.js";
 
 import { subscribe } from "../controllers/sseController.js";

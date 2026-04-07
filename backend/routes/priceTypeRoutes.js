@@ -1,3 +1,4 @@
+// Route cho các định nghĩa price type dùng lại như thường hoặc VIP.
 import { Router } from "../utils/router.js";
 
 import {

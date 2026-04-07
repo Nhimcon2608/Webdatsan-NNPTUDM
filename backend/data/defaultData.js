@@ -1,8 +1,10 @@
+// Dữ liệu seed mặc định sẽ được thêm nếu id tương ứng chưa tồn tại trong MongoDB.
 function nowIso() {
   return new Date().toISOString();
 }
 
 export const defaults = {
+  // Các tài khoản nền cho ba vai trò chính trong luồng local/demo.
   accounts: [
     {
       id: "acc-admin-1",
@@ -35,9 +37,11 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Chủ sân dùng để làm giàu dữ liệu branch và partnership request.
   owners: [
     { id: "owner-1", fullName: "Owner A", phoneNumber: "0900000011", createdAt: nowIso() },
   ],
+  // Hồ sơ người chơi được lưu tách khỏi tài khoản đăng nhập.
   players: [
     {
       id: "player-1",
@@ -47,6 +51,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Branch là tài nguyên nghiệp vụ chính do admin và manager quản lý.
   branches: [
     {
       id: "branch-1",
@@ -60,6 +65,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Partnership request nối nhu cầu hợp tác của chủ sân với dữ liệu branch.
   partnershipRequests: [
     {
       id: "pr-1",
@@ -69,6 +75,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Court thuộc về một branch và là đơn vị được người dùng đặt thực tế.
   badmintonCourts: [
     {
       id: "court-1",
@@ -80,10 +87,12 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Price type định nghĩa các nhóm giá dùng lại như thường hoặc VIP.
   priceTypes: [
     { id: "pt-1", name: "Thuong", createdAt: nowIso() },
     { id: "pt-2", name: "VIP", createdAt: nowIso() },
   ],
+  // Price là dữ liệu theo branch, thường gắn với loại giá và khung giờ.
   prices: [
     {
       id: "price-1",
@@ -95,6 +104,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Reservation lưu bản ghi đặt sân ở mức tổng.
   reservations: [
     {
       id: "res-1",
@@ -106,6 +116,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Reservation detail lưu slot cụ thể cho từng reservation.
   reservationDetails: [
     {
       id: "rd-1",
@@ -117,7 +128,9 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Fixed booking được sinh theo nhu cầu nên seed mặc định để trống.
   fixedBookings: [],
+  // Review lưu phản hồi của người dùng cho branch.
   reviews: [
     {
       id: "review-1",
@@ -128,6 +141,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Payment theo dõi hóa đơn và trạng thái thanh toán của reservation.
   payments: [
     {
       id: "pay-1",
@@ -138,6 +152,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Voucher là mã khuyến mãi ở mức branch.
   vouchers: [
     {
       id: "voucher-1",
@@ -148,6 +163,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Temporary recruitment là bài tuyển thêm người chơi cho một booking có sẵn.
   temporaryRecruitments: [
     {
       id: "tr-1",
@@ -157,6 +173,7 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Saved recruitment và registration là dữ liệu cá nhân hóa theo từng user.
   temporaryRecruitmentSaved: [],
   temporaryRegistrations: [],
 };

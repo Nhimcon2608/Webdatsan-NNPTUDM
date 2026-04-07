@@ -1,3 +1,4 @@
+// Route reservation chính cho xem, tạo, cập nhật và phát thông báo booking.
 import { Router } from "../utils/router.js";
 
 import {
@@ -11,6 +12,7 @@ import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
+// Tạo và sửa reservation đều cần ngữ cảnh user hiện tại.
 router.get("/", getReservations);
 router.post("/", requireAuth, createReservation);
 router.get("/:reservationId", getReservationById);

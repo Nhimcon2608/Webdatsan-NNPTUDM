@@ -1,8 +1,10 @@
+// Xử lý login, register và logout cho luồng xác thực mock hiện tại.
 import { created, ok } from "../utils/response.js";
 import { insert, list } from "../utils/store.js";
 import { toPublicAccount } from "../utils/accountView.js";
 
 export async function login(req, res) {
+  // Login chấp nhận email hoặc username và trả mock token để dùng local.
   const payload = req.body || {};
   const email = String(payload.email || payload.username || "")
     .trim()
@@ -27,6 +29,7 @@ export async function login(req, res) {
 }
 
 export async function register(req, res) {
+  // Register mặc định tạo account USER nếu không truyền role cụ thể.
   const payload = req.body || {};
   const email = String(payload.email || payload.username || "")
     .trim()
