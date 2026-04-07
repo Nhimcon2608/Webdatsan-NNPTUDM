@@ -1,3 +1,4 @@
+// Đọc và cập nhật player profile thuộc về account đang đăng nhập.
 import { ok } from "../utils/response.js";
 import { insert, list, updateById } from "../utils/store.js";
 
@@ -13,6 +14,7 @@ export async function getCurrentPlayer(req, res) {
 }
 
 export async function updateCurrentPlayer(req, res) {
+  // Lần cập nhật đầu tiên sẽ tạo profile nếu user chưa có.
   const payload = req.body || {};
   const accountId = req.context.accountId;
 

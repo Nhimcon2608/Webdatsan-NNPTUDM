@@ -1,3 +1,4 @@
+// Helper response nhỏ để các payload thành công có format thống nhất.
 export function ok(res, data = null, message = "OK") {
   return res.status(200).json({ success: true, message, data });
 }

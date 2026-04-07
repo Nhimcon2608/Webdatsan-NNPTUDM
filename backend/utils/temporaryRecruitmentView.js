@@ -1,3 +1,4 @@
+// Ghép nhiều collection để tạo payload temporary recruitment sẵn sàng cho frontend.
 import { toPublicAccount } from "./accountView.js";
 import { serializeBranch } from "./branchView.js";
 import {
@@ -57,6 +58,7 @@ function buildCourtRentalInformations(rawDetails, courtsById, playerName) {
 }
 
 export async function buildTemporaryRecruitmentContext() {
+  // Tải các collection liên quan một lần để serialize từng recruitment nhất quán hơn.
   const [
     accounts,
     players,

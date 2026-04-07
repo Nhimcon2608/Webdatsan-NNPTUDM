@@ -1,3 +1,4 @@
+// Trả dữ liệu owner và có thể làm giàu thêm bằng branch cùng partnership request.
 import { ok } from "../utils/response.js";
 import { list } from "../utils/store.js";
 import { serializeOwner } from "../utils/partnershipRequestView.js";

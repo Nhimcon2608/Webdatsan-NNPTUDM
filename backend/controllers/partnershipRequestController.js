@@ -1,3 +1,4 @@
+// Xử lý gửi partnership request và luồng admin duyệt.
 import { created, ok } from "../utils/response.js";
 import { insert, list, updateById } from "../utils/store.js";
 import {
@@ -6,6 +7,7 @@ import {
 } from "../utils/partnershipRequestView.js";
 
 export async function createPartnershipRequest(req, res) {
+  // Payload owner/partner dạng lồng được làm phẳng để dữ liệu lưu dễ query hơn.
   const owner = req.body?.owner || {};
   const partner = req.body?.partner || {};
   const createdRequest = await insert("partnershipRequests", {

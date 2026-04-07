@@ -1,3 +1,4 @@
+// Controller chính cho danh sách reservation, tạo mới, cập nhật và đổi trạng thái.
 import { created, ok } from "../utils/response.js";
 import { getRequestAccount } from "../middleware/auth.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
@@ -22,6 +23,7 @@ function sortReservations(rows, sort) {
   }
 }
 
+// Reservation context được tải một lần để mỗi booking có thể serialize kèm player và detail.
 async function loadReservationContext() {
   const [accounts, players, reservationDetails] = await Promise.all([
     list("accounts"),
@@ -42,6 +44,7 @@ async function serializeReservations(rows) {
 }
 
 export async function getReservations(req, res) {
+  // Đọc reservation hỗ trợ filter theo ngày, trạng thái, phạm vi user và loại trừ bản ghi đã hủy.
   const {
     branchId,
     date,
@@ -109,6 +112,7 @@ export async function getReservationById(req, res) {
 }
 
 export async function createReservation(req, res) {
+  // Reservation mới mặc định gắn với user hiện tại và ngày hôm nay nếu không truyền rõ.
   const payload = req.body || {};
   const createdRow = await insert("reservations", {
     ...payload,
@@ -137,6 +141,7 @@ export async function updateReservation(req, res) {
 }
 
 export async function bulkUpdateReservations(req, res) {
+  // Bulk update trạng thái phục vụ các luồng manager/admin thao tác trên nhiều booking cùng lúc.
   const reservationIds = Array.isArray(req.body?.reservationIds) ? req.body.reservationIds : [];
   const status = req.body?.status;
 

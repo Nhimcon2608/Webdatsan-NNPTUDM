@@ -1,3 +1,4 @@
+// Route cho các bài temporary recruitment gắn với reservation.
 import { Router } from "../utils/router.js";
 
 import {

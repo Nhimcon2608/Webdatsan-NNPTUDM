@@ -1,3 +1,4 @@
+// Tạo nhóm booking lặp lại bằng cách sinh nhiều reservation.
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 
@@ -13,6 +14,7 @@ export async function getFixedBookings(req, res) {
 }
 
 export async function createFixedBooking(req, res) {
+  // Bản ghi fixed booking chỉ lưu các reservation id đã sinh và một trạng thái dùng chung.
   const payload = req.body || {};
   const repeatCount = Number(payload.repeatCount || 4);
 

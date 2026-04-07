@@ -1,3 +1,4 @@
+// Lớp CRUD mỏng bọc quanh collection MongoDB cho đa số controller.
 import { randomUUID } from "crypto";
 
 import { getCollection } from "./database.js";
@@ -36,6 +37,7 @@ export async function findById(resource, id) {
 }
 
 export async function insert(resource, payload) {
+  // id và timestamp do ứng dụng quản lý được tạo ở đây để controller gọn hơn.
   const collection = getCollection(resource);
   const item = {
     id: payload.id || randomUUID(),

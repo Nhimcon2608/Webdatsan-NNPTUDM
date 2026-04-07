@@ -1,9 +1,11 @@
+// Middleware xác thực và phân quyền dùng chung cho các route được bảo vệ.
 import { findById } from "../utils/store.js";
 
 function normalizeRole(role) {
   return String(role || "").trim().toUpperCase();
 }
 
+// Account và role được lưu lại vào req.context để phần sau tái sử dụng.
 export async function getRequestAccount(req) {
   if (req.context?.account !== undefined) {
     return req.context.account;
@@ -43,6 +45,7 @@ export async function requireAuth(req, res, next) {
   return next();
 }
 
+// Kiểm tra role được xây trên auth và chuẩn hóa tên role trước khi so sánh.
 export function requireRoles(...allowedRoles) {
   const normalizedAllowedRoles = allowedRoles.map(normalizeRole).filter(Boolean);
 

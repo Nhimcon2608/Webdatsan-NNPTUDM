@@ -1,3 +1,4 @@
+// Tập trung logic lưu file upload, tạo path an toàn và dọn file.
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -28,6 +29,7 @@ export function getUploadsRoot() {
 }
 
 export async function persistUploadedFile(file, directorySegments = []) {
+  // Trả về public path để frontend tham chiếu file qua static mount của Express.
   if (!file?.buffer) {
     return null;
   }
@@ -43,6 +45,7 @@ export async function persistUploadedFile(file, directorySegments = []) {
 }
 
 export async function deleteUploadedFile(publicPath) {
+  // Chỉ cho phép xóa file nằm trong uploads root.
   if (!publicPath || !String(publicPath).startsWith("/uploads/")) {
     return;
   }

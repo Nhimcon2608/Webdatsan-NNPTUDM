@@ -1,7 +1,9 @@
+// Controller CRUD cho các dòng giá ở mức branch.
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, removeById, updateById } from "../utils/store.js";
 
 export async function getAllPrices(req, res) {
+  // Đọc price hỗ trợ filter nhẹ theo branch và price type.
   const { branchId, priceTypeId } = req.query;
   let rows = await list("prices");
 

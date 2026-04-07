@@ -1,3 +1,4 @@
+// Route để đăng ký tham gia và xem danh sách temporary recruitment đã đăng ký.
 import { Router } from "../utils/router.js";
 
 import {

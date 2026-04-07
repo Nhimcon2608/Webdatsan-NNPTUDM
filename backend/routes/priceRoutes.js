@@ -1,3 +1,4 @@
+// Route price dùng để quản lý dữ liệu giá theo branch.
 import { Router } from "../utils/router.js";
 
 import {
@@ -14,6 +15,7 @@ import { requireRoles } from "../middleware/auth.js";
 
 const router = Router();
 
+// Đọc dữ liệu là public, còn ghi dữ liệu chỉ dành cho admin và manager.
 router.get("/", getAllPrices);
 router.post("/", requireRoles("ADMIN", "MANAGER"), createPrice);
 router.get("/:id", getPriceById);

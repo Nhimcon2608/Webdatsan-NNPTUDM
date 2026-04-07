@@ -1,3 +1,4 @@
+// Tạo kết nối MongoDB dạng singleton và seed collection mặc định khi khởi động.
 import { MongoClient } from "mongodb";
 
 import { defaults, resources } from "../data/defaultData.js";
@@ -18,6 +19,7 @@ function createClient() {
 }
 
 async function ensureIndexes(db) {
+  // Mọi collection đều dùng field id ở mức ứng dụng nên index này giữ id không bị trùng.
   await Promise.all(
     resources.map(async (resource) => {
       await db.collection(resource).createIndex({ id: 1 }, { unique: true });
@@ -51,6 +53,7 @@ export async function connectToDatabase() {
   const client = await clientPromise;
   database = client.db(getDatabaseName());
 
+  // Phần khởi tạo chỉ chạy một lần sau khi client sẵn sàng.
   await ensureIndexes(database);
   await Promise.all(resources.map((resource) => seedCollection(database, resource)));
 

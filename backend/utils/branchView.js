@@ -1,3 +1,4 @@
+// Chuẩn hóa dữ liệu branch trước khi trả về frontend.
 function slugify(value) {
   return String(value || "owner")
     .toLowerCase()

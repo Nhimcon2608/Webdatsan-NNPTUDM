@@ -1,7 +1,9 @@
+// Controller CRUD cho các định nghĩa price type dùng lại.
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, removeById } from "../utils/store.js";
 
 export async function getAllPriceTypes(req, res) {
+  // Route này có thể nhúng giá theo branch vào từng price type nếu cần.
   const { branchId, include } = req.query;
   const priceTypes = await list("priceTypes");
 

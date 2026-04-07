@@ -1,3 +1,4 @@
+// Lưu và xóa metadata ảnh cho từng badminton court.
 import { created, ok } from "../utils/response.js";
 import { list, updateById } from "../utils/store.js";
 import { deleteUploadedFile, persistUploadedFile } from "../utils/uploadStorage.js";
@@ -7,6 +8,7 @@ function getUploadedFile(req) {
 }
 
 export async function uploadCourtImage(req, res) {
+  // File upload được lưu theo court id để danh sách ảnh luôn gắn với đúng sân.
   const badmintonCourtId = req.body?.badmintonCourtId || req.body?.courtId;
 
   if (!badmintonCourtId) {

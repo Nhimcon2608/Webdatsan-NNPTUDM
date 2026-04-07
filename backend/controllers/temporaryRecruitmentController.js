@@ -1,3 +1,4 @@
+// Controller CRUD cho bài temporary recruitment gắn với reservation.
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 import {
@@ -13,6 +14,7 @@ function toBoolean(value) {
 }
 
 export async function getAllTemporaryRecruitments(req, res) {
+  // Đọc temporary recruitment bắt đầu từ context đã dựng sẵn để response đã được làm giàu.
   const { branchId, available, reservationId } = req.query;
   const context = await buildTemporaryRecruitmentContext();
   let rows = context.temporaryRecruitments.map((item) => serializeTemporaryRecruitment(item, context));

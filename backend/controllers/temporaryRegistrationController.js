@@ -1,3 +1,4 @@
+// Quản lý các lượt đăng ký tham gia bài temporary recruitment.
 import { created, ok } from "../utils/response.js";
 import { insert, list } from "../utils/store.js";
 import {

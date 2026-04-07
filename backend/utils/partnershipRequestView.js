@@ -1,3 +1,4 @@
+// Chuẩn hóa dữ liệu partnership request và owner thành contract ổn định cho frontend.
 function slugify(value) {
   return String(value || "owner")
     .toLowerCase()

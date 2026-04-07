@@ -1,3 +1,4 @@
+// Route player profile cho user hiện đang đăng nhập.
 import { Router } from "../utils/router.js";
 
 import { getCurrentPlayer, updateCurrentPlayer } from "../controllers/playerController.js";

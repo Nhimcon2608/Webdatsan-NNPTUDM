@@ -1,3 +1,4 @@
+// Xử lý slot detail của reservation và tra cứu theo sân/ngày cho khung giờ đã đặt.
 import { created, ok } from "../utils/response.js";
 import { insert, list } from "../utils/store.js";
 import {
@@ -15,6 +16,7 @@ export async function createReservationDetail(req, res) {
 }
 
 export async function getReservationDetails(req, res) {
+  // Khi có courtId, route này hoạt động như tra cứu chiếm chỗ đơn giản cho một sân trong một ngày.
   const { courtId, date } = req.query;
   const targetDate =
     !date || date === "today" ? new Date().toISOString().slice(0, 10) : String(date).slice(0, 10);

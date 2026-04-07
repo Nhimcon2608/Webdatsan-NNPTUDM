@@ -1,3 +1,4 @@
+// Route reservation detail để lấy các slot đã đặt theo sân và reservation.
 import { Router } from "../utils/router.js";
 
 import {

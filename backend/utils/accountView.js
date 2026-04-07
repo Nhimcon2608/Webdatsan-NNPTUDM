@@ -1,3 +1,4 @@
+// Loại bỏ field nhạy cảm và chuẩn hóa tên field account cho frontend.
 export function toPublicAccount(account) {
   if (!account) {
     return null;
