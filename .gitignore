@@ -27,19 +27,7 @@ build/
 *.iml
 
 # Uploads
-bcb-backend/uploads/
+backend/uploads/
 
 # Docker dev files
 Dockerfile.dev
-
-# Local docs and API tooling
-Baocao.txt
-postman/
-backend/scripts/runPostmanAutomation.sh
-
-# AGENTS.md
-AGENTS.md
-GIAI_THICH_BACKEND.md
-
-#uploads
-uploads/
