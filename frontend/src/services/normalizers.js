@@ -30,6 +30,11 @@ export function toArray(value) {
 	return Array.isArray(value) ? value : [];
 }
 
+export function toFiniteNumber(value, fallback = 0) {
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 export function toHourNumber(value) {
 	if (typeof value === "number" && Number.isFinite(value)) {
 		return value;
@@ -195,25 +200,31 @@ function inferPriceTypeLabel(priceType, index = 0) {
 	if (
 		rawValue.includes("co dinh") ||
 		rawValue.includes("cố định") ||
-		rawValue.includes("fixed") ||
-		rawValue.includes("thuong") ||
-		rawValue.includes("thường") ||
-		rawValue.includes("standard")
+		rawValue.includes("fixed")
 	) {
 		return "Cố định";
 	}
 
 	if (
+		rawValue.includes("thuong") ||
+		rawValue.includes("thường") ||
+		rawValue.includes("standard") ||
+		rawValue.includes("normal") ||
 		rawValue.includes("vang lai") ||
 		rawValue.includes("vãng lai") ||
 		rawValue.includes("casual") ||
-		rawValue.includes("walk") ||
-		rawValue.includes("vip")
+		rawValue.includes("walk")
 	) {
 		return "Vãng lai";
 	}
 
-	return index === 0 ? "Cố định" : "Vãng lai";
+	// Legacy backend chi co Thuong/VIP, trong UI dat theo ngay can bucket gia "thuong"
+	// duoc uu tien cho nhom vãng lai. Bucket con lai duoc xem la cố định.
+	if (rawValue.includes("vip")) {
+		return "Cố định";
+	}
+
+	return index === 0 ? "Vãng lai" : "Cố định";
 }
 
 export function normalizePriceType(priceType, index = 0) {
@@ -237,14 +248,17 @@ export function normalizePrice(price, priceType = null, index = 0) {
 
 	const normalizedPriceType = normalizePriceType(priceType || price.priceType || {}, index);
 	const dayOfWeek = String(price.dayOfWeek ?? price.dayofweek ?? "0");
-	const pricePerHour = Number(price.pricePerHour ?? price.amount ?? price.price ?? 0);
+	const pricePerHour = toFiniteNumber(
+		price.pricePerHour ?? price.amount ?? price.price,
+		0,
+	);
 
 	return {
 		...price,
 		startTime: toHourNumber(price.startTime),
 		endTime: toHourNumber(price.endTime),
 		pricePerHour,
-		amount: Number(price.amount ?? pricePerHour),
+		amount: toFiniteNumber(price.amount, pricePerHour),
 		dayOfWeek,
 		dayofweek: dayOfWeek,
 		priceType: normalizedPriceType,
@@ -391,7 +405,41 @@ export function normalizeVoucher(voucher, index = 0) {
 		typeof voucher.available === "boolean"
 			? voucher.available
 			: String(voucher.status || "ACTIVE").toUpperCase() === "ACTIVE";
-	const discountRate = Number(voucher.discountRate ?? voucher.discountPercent ?? 0);
+	const discountRate = toFiniteNumber(voucher.discountRate ?? voucher.discountPercent, 0);
+	const startsAt = (() => {
+		const rawValue = voucher.startsAt || voucher.startAt || voucher.startDate || "";
+		const parsed = rawValue ? new Date(rawValue) : null;
+		return parsed && !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : "";
+	})();
+	const endsAt = (() => {
+		const rawValue = voucher.endsAt || voucher.endAt || voucher.endDate || "";
+		const parsed = rawValue ? new Date(rawValue) : null;
+		return parsed && !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : "";
+	})();
+	const createdAt = (() => {
+		const rawValue = voucher.createdAt || voucher.createAt || "";
+		const parsed = rawValue ? new Date(rawValue) : null;
+		return parsed && !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : "";
+	})();
+	const now = Date.now();
+	const startTime = startsAt ? Date.parse(startsAt) : NaN;
+	const endTime = endsAt ? Date.parse(endsAt) : NaN;
+	const hasStarted = !Number.isFinite(startTime) || now >= startTime;
+	const hasNotExpired = !Number.isFinite(endTime) || now <= endTime;
+	const isRedeemableNow = available && hasStarted && hasNotExpired;
+	let statusLabel = "Hoạt động";
+	let statusColor = "success";
+
+	if (!available) {
+		statusLabel = "Đã khóa";
+		statusColor = "default";
+	} else if (Number.isFinite(startTime) && now < startTime) {
+		statusLabel = "Sắp diễn ra";
+		statusColor = "warning";
+	} else if (Number.isFinite(endTime) && now > endTime) {
+		statusLabel = "Hết hạn";
+		statusColor = "error";
+	}
 
 	return {
 		...voucher,
@@ -400,6 +448,13 @@ export function normalizeVoucher(voucher, index = 0) {
 		discountPercent: Number(voucher.discountPercent ?? discountRate),
 		available,
 		status: available ? "ACTIVE" : "INACTIVE",
+		startsAt,
+		endsAt,
+		createdAt,
+		createAt: createdAt,
+		isRedeemableNow,
+		statusLabel,
+		statusColor,
 	};
 }
 
@@ -415,7 +470,7 @@ export function normalizePayment(payment) {
 	return {
 		...payment,
 		createAt: payment.createAt || payment.createdAt || "",
-		total: Number(payment.total ?? payment.amount ?? 0),
+		total: toFiniteNumber(payment.total ?? payment.amount, 0),
 		paymentStatus: String(payment.paymentStatus || "PENDING").toUpperCase(),
 	};
 }

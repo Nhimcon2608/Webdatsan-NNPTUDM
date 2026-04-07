@@ -6,12 +6,14 @@ import { toPublicAccount } from "../utils/accountView.js";
 export async function login(req, res) {
   // Login chấp nhận email hoặc username và trả mock token để dùng local.
   const payload = req.body || {};
-  const email = String(payload.email || payload.username || "")
+  const credential = String(payload.email || payload.username || "")
     .trim()
     .toLowerCase();
   const password = String(payload.password || "");
   const account = (await list("accounts")).find(
-    (item) => item.email.toLowerCase() === email && item.password === password,
+    (item) =>
+      (item.email?.toLowerCase() === credential || item.username?.toLowerCase() === credential) &&
+      item.password === password,
   );
 
   if (!account) {
@@ -47,6 +49,7 @@ export async function register(req, res) {
 
   const account = await insert("accounts", {
     email,
+    username: payload.username || "",
     password: payload.password || "123456",
     fullName: payload.fullName || payload.username || email,
     phoneNumber: payload.phoneNumber || "",

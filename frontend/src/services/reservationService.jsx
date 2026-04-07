@@ -70,8 +70,13 @@ const reservationService = {
 
 	getAllReservationsOfUser: async (status) => {
 		try {
+			const params = { userScope: "current" };
+			if (status && String(status).toLowerCase() !== "all") {
+				params.status = status;
+			}
+
 			const response = await apiClient.get(apiRoutes.reservations.root, {
-				params: { userScope: "current", status },
+				params,
 			});
 			return normalizeReservationList(unwrapApiData(response));
 		} catch (error) {

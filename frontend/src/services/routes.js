@@ -9,6 +9,7 @@ export const apiRoutes = {
 		me: '/users/me',
 		password: '/users/me/password',
 		avatar: '/users/me/avatar',
+		resetPassword: (accountId) => `/users/${accountId}/reset-password`,
 	},
 	players: {
 		me: '/players/me',

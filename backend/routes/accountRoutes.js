@@ -3,6 +3,7 @@ import { Router } from "../utils/router.js";
 import multer from "multer";
 
 import {
+  adminResetPassword,
   changePassword,
   getAllAccounts,
   getMe,
@@ -16,6 +17,7 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 // Admin xem toàn bộ account, còn user đã đăng nhập quản lý hồ sơ của chính mình.
 router.get("/", requireRoles("ADMIN"), getAllAccounts);
+router.post("/:accountId/reset-password", requireRoles("ADMIN"), adminResetPassword);
 router.get("/me", requireAuth, getMe);
 router.patch("/me", requireAuth, updateAccount);
 router.put("/me/password", requireAuth, changePassword);

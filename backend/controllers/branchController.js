@@ -4,6 +4,13 @@ import { findById, insert, list, updateById } from "../utils/store.js";
 import { serializeBranch } from "../utils/branchView.js";
 import { deleteUploadedFile, persistUploadedFile } from "../utils/uploadStorage.js";
 
+function slugify(value) {
+  return String(value || "manager")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/(^\.|\.$)/g, "");
+}
+
 function toBoolean(value) {
   if (typeof value === "boolean") {
     return value;
@@ -13,6 +20,119 @@ function toBoolean(value) {
 
 function getUploadedFile(req) {
   return req.file || req.files?.[0] || null;
+}
+
+function normalizeCredential(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function resolveRequestOwnerName(request, payload) {
+  return (
+    request?.ownerName ||
+    request?.owner?.ownerName ||
+    request?.owner?.fullName ||
+    payload?.ownerName ||
+    ""
+  );
+}
+
+function buildManagerEmail(payload, request, username) {
+  const explicitEmail = normalizeCredential(
+    payload?.accountRequest?.email || payload?.email || request?.ownerEmail || request?.owner?.email,
+  );
+
+  if (explicitEmail) {
+    return explicitEmail;
+  }
+
+  return `${slugify(username || resolveRequestOwnerName(request, payload) || "manager")}@webdatsan.vn`;
+}
+
+function buildManagerUsername(payload, request) {
+  const explicitUsername = String(payload?.accountRequest?.username || payload?.username || "")
+    .trim()
+    .toLowerCase();
+
+  if (explicitUsername) {
+    return explicitUsername;
+  }
+
+  const email = buildManagerEmail(payload, request, "");
+  return email.split("@")[0];
+}
+
+function buildManagerPhoneNumber(payload, request) {
+  return String(
+    payload?.accountRequest?.phoneNumber ||
+      payload?.phoneNumber ||
+      request?.ownerPhoneNumber ||
+      request?.owner?.phoneNumber ||
+      "",
+  ).trim();
+}
+
+function buildManagerAccountInput(payload, request) {
+  const username = buildManagerUsername(payload, request);
+
+  return {
+    email: buildManagerEmail(payload, request, username),
+    username,
+    password: String(payload?.accountRequest?.password || payload?.password || "123456"),
+    fullName: resolveRequestOwnerName(request, payload) || payload?.branchName || "Manager",
+    phoneNumber: buildManagerPhoneNumber(payload, request),
+  };
+}
+
+function findMatchingManagerAccount(accounts, accountInput) {
+  return accounts.find((account) => {
+    const normalizedAccountEmail = normalizeCredential(account?.email);
+    const normalizedAccountUsername = normalizeCredential(account?.username);
+
+    return Boolean(
+      (accountInput.email && normalizedAccountEmail === accountInput.email) ||
+        (accountInput.username && normalizedAccountUsername === accountInput.username) ||
+        (accountInput.phoneNumber && account?.phoneNumber === accountInput.phoneNumber),
+    );
+  });
+}
+
+async function ensureManagerAccount(accountInput, existingAccount = null) {
+  if (existingAccount) {
+    const patch = {
+      role: existingAccount.role === "ADMIN" ? "ADMIN" : "MANAGER",
+    };
+
+    if (!existingAccount.email && accountInput.email) {
+      patch.email = accountInput.email;
+    }
+
+    if (!existingAccount.username && accountInput.username) {
+      patch.username = accountInput.username;
+    }
+
+    if (
+      accountInput.fullName &&
+      (!existingAccount.fullName || existingAccount.fullName === existingAccount.email)
+    ) {
+      patch.fullName = accountInput.fullName;
+    }
+
+    if (!existingAccount.phoneNumber && accountInput.phoneNumber) {
+      patch.phoneNumber = accountInput.phoneNumber;
+    }
+
+    return updateById("accounts", existingAccount.id, patch);
+  }
+
+  return insert("accounts", {
+    email: accountInput.email,
+    username: accountInput.username,
+    password: accountInput.password,
+    fullName: accountInput.fullName,
+    phoneNumber: accountInput.phoneNumber,
+    role: "MANAGER",
+    avatarUrl: "",
+  });
 }
 
 // Response branch được làm giàu thêm bằng dữ liệu owner và partnership request.
@@ -56,7 +176,12 @@ export async function getBranches(req, res) {
   }
 
   if (partnershipRequestId) {
-    branches = branches.filter((item) => item.partnershipRequestId === partnershipRequestId);
+    const relatedRequest = await findById("partnershipRequests", partnershipRequestId);
+    branches = branches.filter(
+      (item) =>
+        item.partnershipRequestId === partnershipRequestId ||
+        (relatedRequest?.branchId && item.id === relatedRequest.branchId),
+    );
   }
 
   if (managerAccountId) {
@@ -78,14 +203,75 @@ export async function getBranchById(req, res) {
 
 export async function createBranch(req, res) {
   // Khi tạo mới cũng chuẩn hóa field legacy để frontend và backend vẫn tương thích.
+  const payload = req.body || {};
+  const partnershipRequestId = String(payload?.partnershipRequestId || "").trim();
+  const relatedRequest = partnershipRequestId
+    ? await findById("partnershipRequests", partnershipRequestId)
+    : null;
+  const branches = await list("branches");
+
+  if (partnershipRequestId) {
+    const existingBranch = branches.find(
+      (branch) =>
+        branch.partnershipRequestId === partnershipRequestId ||
+        (relatedRequest?.branchId && branch.id === relatedRequest.branchId),
+    );
+
+    if (existingBranch) {
+      const context = await loadBranchContext();
+      return ok(
+        res,
+        serializeBranches([existingBranch], context)[0],
+        "Branch already exists for partnership request",
+      );
+    }
+  }
+
+  const accountInput = buildManagerAccountInput(payload, relatedRequest);
+  const accounts = await list("accounts");
+  const existingAccount = findMatchingManagerAccount(accounts, accountInput);
+
+  if (partnershipRequestId && existingAccount) {
+    const existingManagerBranch = branches.find(
+      (branch) => branch.managerAccountId === existingAccount.id,
+    );
+
+    if (existingManagerBranch) {
+      await updateById("partnershipRequests", relatedRequest.id, {
+        status: "approved",
+        branchId: existingManagerBranch.id,
+      });
+
+      const context = await loadBranchContext();
+      return ok(
+        res,
+        serializeBranches([existingManagerBranch], context)[0],
+        "Existing branch reused for manager account",
+      );
+    }
+  }
+
+  const managerAccount = await ensureManagerAccount(accountInput, existingAccount);
   const createdBranch = await insert("branches", {
-    ...req.body,
-    name: req.body?.name || req.body?.branchName,
-    branchName: req.body?.branchName || req.body?.name,
-    phoneNumber: req.body?.phoneNumber || req.body?.accountRequest?.phoneNumber || "",
-    isCooperated: req.body?.isCooperated ?? req.body?.cooperated ?? true,
-    status: req.body?.status || "ACTIVE",
+    ...payload,
+    name: payload?.name || payload?.branchName,
+    branchName: payload?.branchName || payload?.name,
+    ownerId: payload?.ownerId || relatedRequest?.ownerId || "",
+    managerAccountId: payload?.managerAccountId || managerAccount?.id || "",
+    partnershipRequestId,
+    email: payload?.email || relatedRequest?.ownerEmail || managerAccount?.email || "",
+    phoneNumber: payload?.phoneNumber || payload?.accountRequest?.phoneNumber || "",
+    isCooperated: payload?.isCooperated ?? payload?.cooperated ?? true,
+    status: payload?.status || "ACTIVE",
   });
+
+  if (relatedRequest) {
+    await updateById("partnershipRequests", relatedRequest.id, {
+      status: "approved",
+      branchId: createdBranch.id,
+    });
+  }
+
   const context = await loadBranchContext();
   return created(res, serializeBranches([createdBranch], context)[0], "Branch created");
 }

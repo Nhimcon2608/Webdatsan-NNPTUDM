@@ -2,6 +2,8 @@
 import { ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 import { toPublicAccount } from "../utils/accountView.js";
+import { sendResetPasswordEmail } from "../utils/mailService.js";
+import { generateRandomPassword } from "../utils/passwords.js";
 import { persistUploadedFile } from "../utils/uploadStorage.js";
 
 // Các endpoint của account luôn lấy account hiện tại từ request context.
@@ -27,6 +29,60 @@ export async function getMe(req, res) {
 export async function getAllAccounts(_req, res) {
   const accounts = await list("accounts");
   return ok(res, accounts.map(toPublicAccount));
+}
+
+export async function adminResetPassword(req, res) {
+  const accountId = String(req.params.accountId || "").trim();
+  const account = await findById("accounts", accountId);
+
+  if (!account) {
+    return res.status(404).json({ success: false, message: "Account not found" });
+  }
+
+  if (String(account.role || "").toUpperCase() === "ADMIN") {
+    return res.status(403).json({ success: false, message: "Cannot reset admin password here" });
+  }
+
+  if (!account.email) {
+    return res.status(400).json({ success: false, message: "Account email is required" });
+  }
+
+  const newPassword = generateRandomPassword();
+  const previousPassword = account.password;
+  const updated = await updateById("accounts", accountId, { password: newPassword });
+
+  if (!updated) {
+    return res.status(404).json({ success: false, message: "Account not found" });
+  }
+
+  try {
+    const delivery = await sendResetPasswordEmail({
+      to: updated.email,
+      recipientName: updated.fullName || updated.username || updated.email,
+      newPassword,
+    });
+
+    const message =
+      delivery.method === "smtp"
+        ? "Password reset and email sent"
+        : "Password reset. Email preview saved locally";
+
+    return ok(
+      res,
+      {
+        account: toPublicAccount(updated),
+        delivery,
+      },
+      message,
+    );
+  } catch (error) {
+    await updateById("accounts", accountId, { password: previousPassword });
+    return res.status(503).json({
+      success: false,
+      message: "Password reset email could not be sent",
+      details: error?.message || "Unknown mail error",
+    });
+  }
 }
 
 export async function changePassword(req, res) {

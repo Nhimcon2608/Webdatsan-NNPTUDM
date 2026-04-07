@@ -44,7 +44,15 @@ PORT=8080
 NODE_ENV=development
 MONGODB_URI=mongodb://127.0.0.1:27017
 MONGODB_DB_NAME=webdatsan
+MAIL_FROM="BcB <no-reply@webdatsan.local>"
+MAIL_SECURE=false
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
 ```
+
+Neu can admin dat lai mat khau va gui mail that, can cau hinh day du SMTP. Neu bo trong SMTP, backend van dat lai mat khau nhung se luu noi dung email preview vao `backend/uploads/mailbox/` de mo local.
 
 ## API groups da map theo frontend services
 

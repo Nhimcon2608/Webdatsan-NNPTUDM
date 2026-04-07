@@ -2,20 +2,91 @@
 import { created, ok } from "../utils/response.js";
 import { insert, list, updateById } from "../utils/store.js";
 import {
+  extractOwnerFromRequest,
+  fallbackOwnerEmail,
   normalizePartnershipRequestStatus,
   serializePartnershipRequest,
 } from "../utils/partnershipRequestView.js";
+
+function resolveOwnerName(owner) {
+  return owner?.ownerName || owner?.fullName || "";
+}
+
+function findMatchingOwner(owners, ownerInput) {
+  return owners.find((owner) => {
+    const existingOwnerName = resolveOwnerName(owner);
+
+    return (
+      (ownerInput.id && owner.id === ownerInput.id) ||
+      (ownerInput.phoneNumber && owner.phoneNumber === ownerInput.phoneNumber) ||
+      (ownerInput.email &&
+        (owner.email === ownerInput.email || owner.ownerEmail === ownerInput.email)) ||
+      (ownerInput.ownerName && existingOwnerName === ownerInput.ownerName)
+    );
+  });
+}
+
+async function ensureOwnerForRequest(payload) {
+  const ownerInput = extractOwnerFromRequest(payload);
+  const owners = await list("owners");
+  const existingOwner = findMatchingOwner(owners, ownerInput);
+
+  if (existingOwner) {
+    const patch = {};
+    const existingOwnerName = resolveOwnerName(existingOwner);
+
+    if (ownerInput.ownerName && !existingOwnerName) {
+      patch.fullName = ownerInput.ownerName;
+      patch.ownerName = ownerInput.ownerName;
+    }
+
+    if (ownerInput.email && !existingOwner.email) {
+      patch.email = ownerInput.email;
+    }
+
+    if (ownerInput.phoneNumber && !existingOwner.phoneNumber) {
+      patch.phoneNumber = ownerInput.phoneNumber;
+    }
+
+    const resolvedOwner = Object.keys(patch).length
+      ? await updateById("owners", existingOwner.id, patch)
+      : existingOwner;
+
+    return {
+      id: resolvedOwner.id,
+      ownerName: resolveOwnerName(resolvedOwner) || ownerInput.ownerName,
+      phoneNumber: resolvedOwner.phoneNumber || ownerInput.phoneNumber || "",
+      email: resolvedOwner.email || ownerInput.email || fallbackOwnerEmail(ownerInput),
+    };
+  }
+
+  const createdOwner = await insert("owners", {
+    fullName: ownerInput.ownerName || "Owner",
+    ownerName: ownerInput.ownerName || "Owner",
+    phoneNumber: ownerInput.phoneNumber || "",
+    email: ownerInput.email || fallbackOwnerEmail(ownerInput),
+  });
+
+  return {
+    id: createdOwner.id,
+    ownerName: resolveOwnerName(createdOwner),
+    phoneNumber: createdOwner.phoneNumber || "",
+    email: createdOwner.email || fallbackOwnerEmail(createdOwner),
+  };
+}
 
 export async function createPartnershipRequest(req, res) {
   // Payload owner/partner dạng lồng được làm phẳng để dữ liệu lưu dễ query hơn.
   const owner = req.body?.owner || {};
   const partner = req.body?.partner || {};
+  const resolvedOwner = await ensureOwnerForRequest(req.body || {});
   const createdRequest = await insert("partnershipRequests", {
     ...req.body,
-    ownerId: req.body?.ownerId || owner.id || "",
-    ownerName: req.body?.ownerName || owner.ownerName || owner.fullName || "",
-    ownerPhoneNumber: req.body?.ownerPhoneNumber || owner.phoneNumber || "",
-    ownerEmail: req.body?.ownerEmail || owner.email || "",
+    ownerId: resolvedOwner.id || req.body?.ownerId || owner.id || "",
+    ownerName:
+      resolvedOwner.ownerName || req.body?.ownerName || owner.ownerName || owner.fullName || "",
+    ownerPhoneNumber: resolvedOwner.phoneNumber || req.body?.ownerPhoneNumber || owner.phoneNumber || "",
+    ownerEmail: resolvedOwner.email || req.body?.ownerEmail || owner.email || "",
     branchName: req.body?.branchName || partner.branchName || "",
     address: req.body?.address || partner.address || "",
     phoneNumber: req.body?.phoneNumber || partner.phoneNumber || "",

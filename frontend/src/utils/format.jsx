@@ -1,9 +1,12 @@
-export const formatVND = (value) =>
-    new Intl.NumberFormat('vi-VN', {
+export const formatVND = (value) => {
+    const normalizedValue = Number(value);
+
+    return new Intl.NumberFormat('vi-VN', {
         style: 'currency',
         currency: 'VND',
         minimumFractionDigits: 0,
-    }).format(value);
+    }).format(Number.isFinite(normalizedValue) ? normalizedValue : 0);
+};
 
 export const formatTimeDate = (isoString) => {
     if (!isoString) return '';

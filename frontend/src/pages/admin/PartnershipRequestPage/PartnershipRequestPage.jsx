@@ -176,7 +176,7 @@ const PartnershipRequestPage = () => {
 
 			const requestData = {
 				branchName: selectedRequest.branchName,
-				email: '',
+				email: selectedRequest.email,
 				address: selectedRequest.address,
 				accountRequest: {
 					username: formData.username,

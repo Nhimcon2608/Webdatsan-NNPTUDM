@@ -26,13 +26,68 @@ export function normalizePartnershipRequestStatus(status) {
   }
 }
 
-function fallbackOwnerEmail(owner) {
+function resolveOwnerName(owner) {
+  return owner?.ownerName || owner?.fullName || "";
+}
+
+export function fallbackOwnerEmail(owner) {
   if (owner?.email) {
     return owner.email;
   }
 
-  const ownerName = owner?.ownerName || owner?.fullName || "owner";
+  const ownerName = resolveOwnerName(owner) || "owner";
   return `${slugify(ownerName) || "owner"}@webdatsan.vn`;
+}
+
+export function extractOwnerFromRequest(request) {
+  const nestedOwner = request?.owner || {};
+  const ownerName =
+    request?.ownerName || nestedOwner.ownerName || nestedOwner.fullName || "";
+  const phoneNumber = request?.ownerPhoneNumber || nestedOwner.phoneNumber || "";
+  const email = request?.ownerEmail || nestedOwner.email || fallbackOwnerEmail({ ownerName });
+
+  return {
+    id: request?.ownerId || nestedOwner.id || "",
+    ownerName,
+    fullName: ownerName,
+    phoneNumber,
+    email,
+  };
+}
+
+export function doesRequestBelongToOwner(request, owner) {
+  const ownerName = resolveOwnerName(owner);
+  const requestOwner = extractOwnerFromRequest(request);
+
+  return Boolean(
+    (requestOwner.id && owner?.id === requestOwner.id) ||
+      (requestOwner.phoneNumber && owner?.phoneNumber === requestOwner.phoneNumber) ||
+      (requestOwner.email &&
+        (owner?.email === requestOwner.email || owner?.ownerEmail === requestOwner.email)) ||
+      (requestOwner.ownerName && ownerName === requestOwner.ownerName),
+  );
+}
+
+export function mergeOwnersWithRequests(owners = [], requests = []) {
+  const mergedOwners = [...owners];
+
+  requests.forEach((request) => {
+    const inferredOwner = extractOwnerFromRequest(request);
+    if (!inferredOwner.ownerName && !inferredOwner.phoneNumber && !inferredOwner.email) {
+      return;
+    }
+
+    if (mergedOwners.some((owner) => doesRequestBelongToOwner(request, owner))) {
+      return;
+    }
+
+    mergedOwners.push({
+      ...inferredOwner,
+      id: inferredOwner.id || `request-owner-${request?.id || Date.now()}`,
+    });
+  });
+
+  return mergedOwners;
 }
 
 export function serializePartnershipRequest(request, options = {}) {
@@ -67,24 +122,15 @@ export function serializePartnershipRequest(request, options = {}) {
 }
 
 export function serializeOwner(owner, requests, branches) {
-  const ownerName = owner?.ownerName || owner?.fullName || "";
+  const ownerName = resolveOwnerName(owner);
   const normalizedOwner = {
     ...owner,
     ownerName,
-    email: owner?.email || fallbackOwnerEmail(owner),
+    email: owner?.email || owner?.ownerEmail || fallbackOwnerEmail(owner),
   };
 
   const partnershipRequest = requests
-    .filter((request) => {
-      const nestedOwner = request?.owner || {};
-      return (
-        request?.ownerId === owner?.id ||
-        nestedOwner.id === owner?.id ||
-        request?.ownerName === ownerName ||
-        nestedOwner.ownerName === ownerName ||
-        nestedOwner.fullName === ownerName
-      );
-    })
+    .filter((request) => doesRequestBelongToOwner(request, normalizedOwner))
     .map((request) => {
       const branch = branches.find(
         (branchItem) =>
