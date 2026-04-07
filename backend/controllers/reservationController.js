@@ -72,7 +72,7 @@ export async function getReservations(req, res) {
     rows = rows.filter((item) => item.userAccountId === req.context.accountId);
   }
 
-  if (status) {
+  if (status && normalizeReservationStatus(status) !== "all") {
     rows = rows.filter(
       (item) =>
         normalizeReservationStatus(item.status) === normalizeReservationStatus(status),

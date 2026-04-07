@@ -21,6 +21,7 @@ import {
 	TableRow,
 	Avatar,
 	Button,
+	Stack,
 	List,
 	ListItem,
 	ListItemText,
@@ -61,6 +62,7 @@ import {
 	addMonths,
 	startOfWeek,
 } from "date-fns";
+import dayjs from "dayjs";
 import vi from "date-fns/locale/vi";
 
 import {
@@ -112,9 +114,73 @@ const bookingType = [
 	{ id: '1', label: 'Đặt theo ngày' },
 	{ id: '2', label: 'Đặt cố định' },
 ];
+const BOOKING_SLOT_MINUTES = 60;
+
 const isWeekendDay = (date) => {
 	const day = date.getDay(); // 0 = CN, 6 = T7
 	return day === 0 || day === 6;
+};
+
+const formatTimeLabel = (hour, minute = 0) =>
+	`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+
+const buildBookingSlot = (startHour, startMinute = 0, slotMinutes = BOOKING_SLOT_MINUTES) => {
+	const startInMinutes = startHour * 60 + startMinute;
+	const endInMinutes = startInMinutes + slotMinutes;
+	const endHour = Math.floor(endInMinutes / 60);
+	const endMinute = endInMinutes % 60;
+	const startLabel = formatTimeLabel(startHour, startMinute);
+	const endLabel = formatTimeLabel(endHour, endMinute);
+
+	return {
+		id: `${startLabel}-${endLabel}`,
+		startLabel,
+		endLabel,
+		displayLabel: `${startLabel} - ${endLabel}`,
+		hour: startHour,
+		minute: startMinute,
+		endHour,
+		endMinute,
+	};
+};
+
+const parseSlotStartHour = (timeSlotId) => {
+	const startLabel = String(timeSlotId || "").split("-")[0] || "";
+	const [hours = "0", minutes = "0"] = startLabel.split(":");
+	const parsedHours = Number(hours);
+	const parsedMinutes = Number(minutes);
+
+	if (!Number.isFinite(parsedHours) || !Number.isFinite(parsedMinutes)) {
+		return 0;
+	}
+
+	return parsedHours + parsedMinutes / 60;
+};
+
+const filterPricesByDay = (prices, date) => {
+	const isWeekend = isWeekendDay(date);
+	const safePrices = Array.isArray(prices) ? prices : [];
+	const dayMatchedPrices = safePrices.filter((price) => {
+		const dayOfWeek = String(price?.dayOfWeek ?? price?.dayofweek ?? "");
+		if (!dayOfWeek) {
+			return true;
+		}
+		return isWeekend ? dayOfWeek === "1" : dayOfWeek === "0";
+	});
+
+	return dayMatchedPrices.length > 0 ? dayMatchedPrices : safePrices;
+};
+
+const findMatchingPriceForSlot = (prices, date, timeSlotId) => {
+	const slotStartHour = parseSlotStartHour(timeSlotId);
+	return filterPricesByDay(prices, date).find(
+		(price) => price.startTime <= slotStartHour && price.endTime > slotStartHour
+	) || null;
+};
+
+const getDailySlotPrice = (prices, date, timeSlotId) => {
+	const pricePerHour = Number(findMatchingPriceForSlot(prices, date, timeSlotId)?.pricePerHour);
+	return Number.isFinite(pricePerHour) ? pricePerHour : 0;
 };
 
 const BranchDetail = () => {
@@ -168,6 +234,9 @@ const BranchDetail = () => {
 	const [selectedDayTab, setSelectedDayTab] = useState(0);
 	const [weekDaysOrder, setWeekDaysOrder] = useState([]);
 	const [fixedTimeSlots, setFixedTimeSlots] = useState([]);
+	const redeemableVouchers = (branchDetail.vouchers || []).filter(
+		(voucher) => voucher.isRedeemableNow
+	);
 
 	const colorPalette = {
 		available: "#f3f4f6",
@@ -260,6 +329,21 @@ const BranchDetail = () => {
 		setReviewOfUser(branchDetail.reviews.find((r) => r.accountId == user.id));
 	}, [user, branchDetail]);
 
+	useEffect(() => {
+		if (!selectedVoucher) {
+			return;
+		}
+
+		const stillRedeemable = (branchDetail.vouchers || []).some(
+			(voucher) => voucher.id === selectedVoucher.id
+				&& voucher.isRedeemableNow
+		);
+
+		if (!stillRedeemable) {
+			setSelectedVoucher(null);
+		}
+	}, [branchDetail.vouchers, selectedVoucher]);
+
 	// console.log('branch: ', branchDetail);
 	// console.log('profile data ', profileData);
 	// console.log('review of user ', reviewOfUser);
@@ -287,36 +371,9 @@ const BranchDetail = () => {
 
 				const generateTimeSlots = () => {
 					const slots = [];
-					for (let hour = minStartTime; hour <= maxEndTime; hour++) {
-						if (hour < maxEndTime) {
-							const formatTime = (value) => value.toString().padStart(2, "0");
-
-							slots.push({
-								id: `${formatTime(hour)}:00-${formatTime(hour)}:30`,
-								startLabel: `${formatTime(hour)}:00`,
-								endLabel: `${formatTime(hour)}:30`,
-								displayLabel: `${formatTime(hour)}:00 - ${formatTime(hour)}:30`,
-								hour,
-								minute: 0,
-								endHour: hour,
-								endMinute: 30,
-							});
-
-							slots.push({
-								id: `${formatTime(hour)}:30-${formatTime(hour + 1)}:00`,
-								startLabel: `${formatTime(hour)}:30`,
-								endLabel: `${formatTime(hour + 1)}:00`,
-								displayLabel: `${formatTime(hour)}:30 - ${formatTime(
-									hour + 1
-								)}:00`,
-								hour,
-								minute: 30,
-								endHour: hour + 1,
-								endMinute: 0,
-							});
-						}
+					for (let hour = minStartTime; hour < maxEndTime; hour++) {
+						slots.push(buildBookingSlot(hour));
 					}
-					// console.log('slot: ', slots);
 					return slots;
 				};
 
@@ -430,31 +487,7 @@ const BranchDetail = () => {
 
 		const slots = [];
 		for (let hour = minStartTime; hour < maxEndTime; hour++) {
-			const formatTime = (value) => value.toString().padStart(2, "0");
-
-			// 00 - 30
-			slots.push({
-				id: `${formatTime(hour)}:00-${formatTime(hour)}:30`,
-				startLabel: `${formatTime(hour)}:00`,
-				endLabel: `${formatTime(hour)}:30`,
-				displayLabel: `${formatTime(hour)}:00 - ${formatTime(hour)}:30`,
-				hour,
-				minute: 0,
-				endHour: hour,
-				endMinute: 30,
-			});
-
-			// 30 - 00 (giờ tiếp theo)
-			slots.push({
-				id: `${formatTime(hour)}:30-${formatTime(hour + 1)}:00`,
-				startLabel: `${formatTime(hour)}:30`,
-				endLabel: `${formatTime(hour + 1)}:00`,
-				displayLabel: `${formatTime(hour)}:30 - ${formatTime(hour + 1)}:00`,
-				hour,
-				minute: 30,
-				endHour: hour + 1,
-				endMinute: 0,
-			});
+			slots.push(buildBookingSlot(hour));
 		}
 
 		setFixedTimeSlots(slots);
@@ -769,28 +802,31 @@ const BranchDetail = () => {
 		reservations?.forEach((r) => {
 			r.reservationDetails?.forEach((d) => {
 				const courtId = d.badmintonCourtId;
-				const splitTime = d.startTime.split(":");
-				let hour = parseInt(splitTime[0], 10);
-				let minute = parseInt(splitTime[1], 10);
+				const reservationStartMinutes = parseTime(d.startTime);
+				const reservationEndMinutes =
+					d.endTime
+						? parseTime(d.endTime)
+						: reservationStartMinutes + Number(d.rentalTime || 0) * 60;
 
-				const totalMinutes = d.rentalTime * 60;
-				const numberOfSlots = totalMinutes / 30;
+				const slotStartMinutes =
+					Math.floor(reservationStartMinutes / BOOKING_SLOT_MINUTES) * BOOKING_SLOT_MINUTES;
 
-				for (let i = 0; i < numberOfSlots; i++) {
-					const startHour = hour.toString().padStart(2, "0");
-					const startMinute = minute.toString().padStart(2, "0");
+				for (
+					let currentStartMinutes = slotStartMinutes;
+					currentStartMinutes < reservationEndMinutes;
+					currentStartMinutes += BOOKING_SLOT_MINUTES
+				) {
+					const currentEndMinutes = currentStartMinutes + BOOKING_SLOT_MINUTES;
 
-					minute += 30;
-					if (minute >= 60) {
-						minute -= 60;
-						hour += 1;
+					if (
+						currentEndMinutes > reservationStartMinutes &&
+						currentStartMinutes < reservationEndMinutes
+					) {
+						const startHour = Math.floor(currentStartMinutes / 60);
+						const startMinute = currentStartMinutes % 60;
+						const slot = buildBookingSlot(startHour, startMinute, BOOKING_SLOT_MINUTES);
+						slots.push({ courtId, timeSlotId: slot.id });
 					}
-
-					const endHour = hour.toString().padStart(2, "0");
-					const endMinute = minute.toString().padStart(2, "0");
-
-					const timeSlotId = `${startHour}:${startMinute}-${endHour}:${endMinute}`;
-					slots.push({ courtId, timeSlotId });
 				}
 			});
 		});
@@ -940,30 +976,8 @@ const BranchDetail = () => {
 	const calculateTotalPrice = () => {
 		if (selectedSlots.length === 0 || !priceTables.casualPrices) return 0;
 
-		const isWeekend = isWeekendDay(selectedDate);
-
-		// Lọc giá vãng lai phù hợp
-		const applicableCasualPrices = priceTables.casualPrices.filter(price => {
-			if (!price.dayOfWeek) return true;
-			return isWeekend ? price.dayOfWeek === "1" : price.dayOfWeek === "0";
-		});
-
-		const finalPrices = applicableCasualPrices.length > 0
-			? applicableCasualPrices
-			: priceTables.casualPrices;
-
 		return selectedSlots.reduce((total, slot) => {
-			const startHour = parseInt(slot.timeSlotId.split("-")[0].split(":")[0], 10);
-
-			const matchingPrice = finalPrices.find(p =>
-				p.startTime <= startHour && p.endTime > startHour
-			);
-
-			const pricePer30Min = matchingPrice
-				? matchingPrice.pricePerHour / 2
-				: 0;
-
-			return total + pricePer30Min;
+			return total + getDailySlotPrice(priceTables.casualPrices, selectedDate, slot.timeSlotId);
 		}, 0);
 	};
 
@@ -977,6 +991,156 @@ const BranchDetail = () => {
 		const total = calculateTotalPrice();
 		const discount = calculateTotalDiscount();
 		return Math.max(0, total - total * discount);
+	};
+
+	const clearSelectedVoucher = () => {
+		setSelectedVoucher(null);
+	};
+
+	const renderVoucherSelector = (baseAmount) => {
+		const numericBaseAmount = Number(baseAmount || 0);
+		const selectedDiscountAmount = selectedVoucher
+			? Math.round((numericBaseAmount * selectedVoucher.discountRate) / 100)
+			: 0;
+
+		return (
+			<Box
+				sx={{
+					border: "1px solid",
+					borderColor: "divider",
+					borderRadius: theme.shape.borderRadius,
+					p: 2,
+					mb: 3,
+					backgroundColor: "background.paper",
+				}}
+			>
+				<Box
+					sx={{
+						display: "flex",
+						justifyContent: "space-between",
+						alignItems: "center",
+						gap: 2,
+						mb: redeemableVouchers.length ? 2 : 0,
+						flexWrap: "wrap",
+					}}
+				>
+					<Box>
+						<Typography
+							variant="subtitle1"
+							fontWeight="bold"
+							sx={{ display: "flex", alignItems: "center", gap: 1 }}
+						>
+							<Tag
+								size={18}
+								color={theme.palette.primary.main}
+							/>
+							Chọn voucher áp dụng
+						</Typography>
+						<Typography variant="body2" color="text.secondary">
+							Chọn mã giảm giá ngay tại bước xác nhận đặt sân.
+						</Typography>
+					</Box>
+
+					{selectedVoucher && (
+						<Button
+							variant="text"
+							color="inherit"
+							onClick={clearSelectedVoucher}
+							sx={{ textTransform: "none" }}
+						>
+							Bỏ chọn voucher
+						</Button>
+					)}
+				</Box>
+
+				{redeemableVouchers.length === 0 ? (
+					<Alert severity="info" sx={{ mt: 1 }}>
+						Hiện chưa có voucher nào đang hiệu lực cho chi nhánh này.
+					</Alert>
+				) : (
+					<Stack spacing={1.5}>
+						{redeemableVouchers.map((voucher) => {
+							const isSelected = selectedVoucher?.id === voucher.id;
+							const discountAmount = Math.round(
+								(numericBaseAmount * voucher.discountRate) / 100
+							);
+
+							return (
+								<Box
+									key={voucher.id}
+									sx={{
+										border: "1px solid",
+										borderColor: isSelected ? "primary.main" : "divider",
+										borderRadius: theme.shape.borderRadius,
+										p: 2,
+										backgroundColor: isSelected
+											? "primary.main"
+											: "background.default",
+										color: isSelected ? "primary.contrastText" : "text.primary",
+									}}
+								>
+									<Box
+										sx={{
+											display: "flex",
+											justifyContent: "space-between",
+											alignItems: "flex-start",
+											gap: 2,
+											flexWrap: "wrap",
+										}}
+									>
+										<Box>
+											<Typography variant="subtitle1" fontWeight="bold">
+												{voucher.event}
+											</Typography>
+											<Typography
+												variant="body2"
+												sx={{ mt: 0.5, opacity: isSelected ? 0.92 : 0.84 }}
+											>
+												Giảm {voucher.discountRate}% • Tiết kiệm{" "}
+												{formatVND(discountAmount)}
+											</Typography>
+											<Typography
+												variant="caption"
+												sx={{ display: "block", mt: 0.75, opacity: 0.84 }}
+											>
+												Hiệu lực: {dayjs(voucher.startsAt).format("DD/MM/YYYY HH:mm")} -{" "}
+												{dayjs(voucher.endsAt).format("DD/MM/YYYY HH:mm")}
+											</Typography>
+										</Box>
+
+										<Button
+											variant={isSelected ? "contained" : "outlined"}
+											color={isSelected ? "inherit" : "primary"}
+											onClick={() => setSelectedVoucher(voucher)}
+											sx={{
+												textTransform: "none",
+												fontWeight: "bold",
+												minWidth: 120,
+												bgcolor: isSelected ? "rgba(255,255,255,0.18)" : undefined,
+												color: isSelected ? "inherit" : undefined,
+												borderColor: isSelected ? "rgba(255,255,255,0.38)" : undefined,
+												"&:hover": isSelected
+													? { bgcolor: "rgba(255,255,255,0.28)" }
+													: undefined,
+											}}
+										>
+											{isSelected ? "Đang áp dụng" : "Dùng voucher"}
+										</Button>
+									</Box>
+								</Box>
+							);
+						})}
+					</Stack>
+				)}
+
+				{selectedVoucher && (
+					<Alert severity="success" sx={{ mt: 2 }}>
+						Đang áp dụng voucher <strong>{selectedVoucher.event}</strong>, bạn được
+						giảm <strong> {formatVND(selectedDiscountAmount)}</strong>.
+					</Alert>
+				)}
+			</Box>
+		);
 	};
 
 	const handleLoginSuccess = async (response) => {
@@ -998,8 +1162,7 @@ const BranchDetail = () => {
 			const key = `${slot.courtId}-${slot.dayIndex}`;
 			if (!grouped[key]) grouped[key] = [];
 
-			// Chuyển timeSlotId thành phút từ 0h (ví dụ: "21:00-21:30" → 1260)
-			const startStr = slot.timeSlotId.split("-")[0]; // "21:00"
+			const startStr = slot.timeSlotId.split("-")[0];
 			const [hour, minute] = startStr.split(":").map(Number);
 			const minutesFromMidnight = hour * 60 + minute;
 
@@ -1017,16 +1180,16 @@ const BranchDetail = () => {
 			let i = 0;
 			while (i < slots.length) {
 				let currentStart = slots[i];
-				let currentEnd = currentStart + 30;
+				let currentEnd = currentStart + BOOKING_SLOT_MINUTES;
 				let count = 1;
 
-				// Gộp các khung liền nhau (cách nhau đúng 30 phút)
+				// Gộp các khung liền nhau theo đúng độ dài một slot.
 				while (i + count < slots.length && slots[i + count] === currentEnd) {
-					currentEnd += 30;
+					currentEnd += BOOKING_SLOT_MINUTES;
 					count++;
 				}
 
-				const durationHours = (currentEnd - currentStart) / 60; // 30p → 0.5, 60p → 1.0...
+				const durationHours = (currentEnd - currentStart) / 60;
 				const startHour = Math.floor(currentStart / 60);
 
 				// Tìm bảng giá cố định phù hợp với giờ bắt đầu
@@ -1034,8 +1197,9 @@ const BranchDetail = () => {
 					p.startTime <= startHour && p.endTime > startHour
 				);
 
-				if (matchingPrice) {
-					totalPrice += matchingPrice.pricePerHour * durationHours;
+				const pricePerHour = Number(matchingPrice?.pricePerHour);
+				if (Number.isFinite(pricePerHour)) {
+					totalPrice += pricePerHour * durationHours;
 				}
 
 				i += count;
@@ -1253,7 +1417,8 @@ const BranchDetail = () => {
 
 						// Chuyển thành phút từ 0h
 						const [startHour, startMin] = startTime.split(":").map(Number);
-						let currentEndMinutes = startHour * 60 + startMin + 30; // Kết thúc của slot đầu tiên
+						let currentEndMinutes =
+							startHour * 60 + startMin + BOOKING_SLOT_MINUTES;
 
 						let slotsCount = 1;
 
@@ -1266,7 +1431,7 @@ const BranchDetail = () => {
 
 							// Nếu slot tiếp theo bắt đầu đúng bằng thời gian kết thúc hiện tại → liền kề
 							if (nextStartMinutes === currentEndMinutes) {
-								currentEndMinutes += 30; // Cộng thêm 30 phút
+								currentEndMinutes += BOOKING_SLOT_MINUTES;
 								slotsCount++;
 							} else {
 								break; // Không liền kề nữa → dừng
@@ -1274,8 +1439,8 @@ const BranchDetail = () => {
 						}
 
 						// Tính tổng thời gian thuê (giờ)
-						const totalMinutes = slotsCount * 30;
-						const rentalTimeHours = totalMinutes / 60; // 30→0.5, 60→1, 90→1.5, 120→2
+						const totalMinutes = slotsCount * BOOKING_SLOT_MINUTES;
+						const rentalTimeHours = totalMinutes / 60;
 
 						// Format: bỏ .0 nếu là số nguyên
 						const rentalTimeStr = rentalTimeHours % 1 === 0
@@ -1506,30 +1671,8 @@ const BranchDetail = () => {
 				};
 			});
 
-			// SỬA CHỖ NÀY - Tính đúng giá mỗi 30 phút
 			const totalPrice = slotDetails.reduce((total, slot) => {
-				// Lấy giờ bắt đầu của slot (ví dụ: "06:00-06:30" → 6)
-				const startHour = parseInt(slot.timeSlotId.split("-")[0].split(":")[0], 10);
-
-				// Tìm giá giờ áp dụng (dựa vào casualPrices như hàm calculateTotalPrice đang làm)
-				const isWeekend = isWeekendDay(selectedDate);
-				const applicablePrices = priceTables.casualPrices.filter(p => {
-					if (!p.dayOfWeek) return true;
-					return isWeekend ? p.dayOfWeek === "1" : p.dayOfWeek === "0";
-				});
-
-				const finalPrices = applicablePrices.length > 0 ? applicablePrices : priceTables.casualPrices;
-
-				const matchingPrice = finalPrices.find(p =>
-					p.startTime <= startHour && p.endTime > startHour
-				);
-
-				// Quan trọng: mỗi slot 30 phút → chia đôi giá giờ
-				const priceForThisSlot = matchingPrice
-					? matchingPrice.pricePerHour / 2
-					: 0;
-
-				return total + priceForThisSlot;
+				return total + getDailySlotPrice(priceTables.casualPrices, selectedDate, slot.timeSlotId);
 			}, 0);
 
 			return {
@@ -1537,7 +1680,7 @@ const BranchDetail = () => {
 				courtName: court?.ordinalNumber,
 				date: format(selectedDate, "dd/MM/yyyy"),
 				slots: slotDetails,
-				totalPrice: totalPrice, // giờ đã đúng 40k mỗi ô nếu giá giờ là 80k
+				totalPrice,
 			};
 		});
 
@@ -1550,7 +1693,6 @@ const BranchDetail = () => {
 					right: 0,
 					bottom: 0,
 					bgcolor: "rgba(0,0,0,0.5)",
-					zIndex: 1000,
 					display: "flex",
 					alignItems: "center",
 					justifyContent: "center",
@@ -1649,6 +1791,8 @@ const BranchDetail = () => {
 								</CardContent>
 							</Card>
 						))}
+
+						{renderVoucherSelector(calculateTotalPrice())}
 
 						<Box
 							sx={{
@@ -1848,17 +1992,16 @@ const BranchDetail = () => {
 				let i = 0;
 				while (i < minutesList.length) {
 					let start = minutesList[i];
-					let end = start + 30;
+					let end = start + BOOKING_SLOT_MINUTES;
 					let count = 1;
 
-					// Kiểm tra slot tiếp theo có liền kề không (cách nhau đúng 30 phút)
+					// Kiểm tra slot tiếp theo có liền kề không theo đúng độ dài một slot.
 					while (i + count < minutesList.length && minutesList[i + count] === end) {
-						end += 30;
+						end += BOOKING_SLOT_MINUTES;
 						count++;
 					}
 
-					// Tính giá cho đoạn liền nhau này
-					const durationHours = (end - start) / 60; // 30p → 0.5h, 60p → 1h
+					const durationHours = (end - start) / 60;
 					const startHour = Math.floor(start / 60);
 
 					// Tìm bảng giá cố định phù hợp
@@ -1866,8 +2009,9 @@ const BranchDetail = () => {
 						p.startTime <= startHour && p.endTime > startHour
 					);
 
-					if (priceItem) {
-						weeklyPrice += priceItem.pricePerHour * durationHours;
+					const pricePerHour = Number(priceItem?.pricePerHour);
+					if (Number.isFinite(pricePerHour)) {
+						weeklyPrice += pricePerHour * durationHours;
 					}
 
 					i += count;
@@ -2029,6 +2173,8 @@ const BranchDetail = () => {
 								</Card>
 							);
 						})}
+
+						{renderVoucherSelector(total4Weeks)}
 
 						{/* TỔNG CỘNG */}
 						<Box sx={{ bgcolor: "background.default", p: 2.5, borderRadius: theme.shape.borderRadius, mt: 3 }}>
@@ -3045,7 +3191,7 @@ const BranchDetail = () => {
 									<Grid container spacing={3}>
 										{branchDetail.vouchers?.map(
 											(voucher) =>
-												voucher.available && (
+												voucher.isRedeemableNow && (
 													<Grid
 														size={{ xs: 12, sm: 6, md: 3.5 }}
 														key={voucher.id}
@@ -3273,7 +3419,6 @@ const BranchDetail = () => {
 															sx={{
 																display: "flex",
 																justifyContent: "space-between",
-																alignItems: "center",
 																mb: 1,
 																flexDirection: { xs: "column", sm: "row" },
 																alignItems: { xs: "flex-start", sm: "center" },
@@ -3430,7 +3575,9 @@ const BranchDetail = () => {
 													<Paper elevation={0} sx={{ p: 2, mb: 3, borderRadius: theme.shape.borderRadius, border: "1px solid", borderColor: "divider" }}>
 														<Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
 															<Info size={16} color={colorPalette.textSecondary} />
-															<Typography variant="body2">Chọn khung giờ mong muốn từ lịch bên dưới</Typography>
+															<Typography variant="body2">
+																Chọn khung giờ mong muốn từ lịch bên dưới. Mỗi ô tương ứng 1 giờ.
+															</Typography>
 														</Box>
 														<Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
 															<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

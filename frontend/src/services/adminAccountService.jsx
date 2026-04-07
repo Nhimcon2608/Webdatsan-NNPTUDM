@@ -15,6 +15,16 @@ const adminAccountService = {
 			throw error;
 		}
 	},
+
+	resetPassword: async (accountId) => {
+		try {
+			const response = await apiClient.post(apiRoutes.users.resetPassword(accountId));
+			return unwrapApiData(response);
+		} catch (error) {
+			console.error("Error resetting password:", error);
+			throw error;
+		}
+	},
 };
 
 export default adminAccountService;

@@ -3,9 +3,15 @@ import {
     Alert,
     Avatar,
     Box,
+    Button,
     Chip,
     CircularProgress,
     Container,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    Link,
     Paper,
     Stack,
     Table,
@@ -21,6 +27,7 @@ import {
 import adminTheme from '../../../theme/adminTheme';
 import adminAccountService from '../../../services/adminAccountService';
 import { resolveBackendUrl } from '../../../services/api';
+import { useSnackbar } from '../../../../context/SnackbarContext';
 
 const roleLabels = {
     ADMIN: 'Admin',
@@ -49,10 +56,14 @@ const formatDateTime = (value) => {
 };
 
 const AccountsPage = () => {
+    const { showSnackbar } = useSnackbar();
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [resettingId, setResettingId] = useState('');
+    const [selectedAccount, setSelectedAccount] = useState(null);
+    const [previewInfo, setPreviewInfo] = useState(null);
 
     useEffect(() => {
         const fetchAccounts = async () => {
@@ -98,6 +109,50 @@ const AccountsPage = () => {
         manager: accounts.filter((account) => account.role === 'MANAGER').length,
         user: accounts.filter((account) => account.role === 'USER').length,
     }), [accounts]);
+
+    const handleOpenResetDialog = (account) => {
+        setSelectedAccount(account);
+    };
+
+    const handleCloseResetDialog = () => {
+        setSelectedAccount(null);
+    };
+
+    const handleClosePreviewDialog = () => {
+        setPreviewInfo(null);
+    };
+
+    const handleResetPassword = async () => {
+        if (!selectedAccount?.id) {
+            return;
+        }
+
+        try {
+            setResettingId(selectedAccount.id);
+            const response = await adminAccountService.resetPassword(selectedAccount.id);
+            const delivery = response?.delivery || {};
+
+            if (delivery.method === 'file') {
+                setPreviewInfo({
+                    email: selectedAccount.email,
+                    previewUrl: resolveBackendUrl(delivery.previewUrl || ''),
+                    previewPath: delivery.previewPath || '',
+                });
+                showSnackbar('Đặt lại mật khẩu thành công. Email preview đã được lưu cục bộ.', 'warning');
+            } else {
+                showSnackbar('Đặt lại mật khẩu thành công và đã gửi email cho người dùng.', 'success');
+            }
+        } catch (resetError) {
+            console.error('Failed to reset password:', resetError);
+            showSnackbar(
+                resetError.response?.data?.message || 'Không thể đặt lại mật khẩu.',
+                'error',
+            );
+        } finally {
+            setResettingId('');
+            handleCloseResetDialog();
+        }
+    };
 
     return (
         <Container maxWidth="xl" sx={{ py: 3 }}>
@@ -163,6 +218,7 @@ const AccountsPage = () => {
                                 <TableCell>Số điện thoại</TableCell>
                                 <TableCell>Vai trò</TableCell>
                                 <TableCell>Ngày tạo</TableCell>
+                                <TableCell align="right">Thao tác</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -193,12 +249,76 @@ const AccountsPage = () => {
                                         />
                                     </TableCell>
                                     <TableCell>{formatDateTime(account.createdAt)}</TableCell>
+                                    <TableCell align="right">
+                                        {account.role === 'ADMIN' ? (
+                                            <Typography variant="body2" color="text.secondary">
+                                                -
+                                            </Typography>
+                                        ) : (
+                                            <Button
+                                                size="small"
+                                                variant="outlined"
+                                                disabled={resettingId === account.id}
+                                                onClick={() => handleOpenResetDialog(account)}
+                                            >
+                                                {resettingId === account.id ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
+                                            </Button>
+                                        )}
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
                 </TableContainer>
             )}
+
+            <Dialog open={Boolean(selectedAccount)} onClose={handleCloseResetDialog} maxWidth="xs" fullWidth>
+                <DialogTitle>Đặt lại mật khẩu</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        {selectedAccount
+                            ? `Tạo mật khẩu ngẫu nhiên mới cho ${selectedAccount.fullName || selectedAccount.email}?`
+                            : ''}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Hệ thống sẽ gửi mật khẩu mới tới email của người dùng. Nếu SMTP chưa cấu hình,
+                        email preview sẽ được lưu cục bộ.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseResetDialog}>Hủy</Button>
+                    <Button
+                        onClick={handleResetPassword}
+                        variant="contained"
+                        disabled={!selectedAccount || resettingId === selectedAccount?.id}
+                    >
+                        Xác nhận
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            <Dialog open={Boolean(previewInfo)} onClose={handleClosePreviewDialog} maxWidth="sm" fullWidth>
+                <DialogTitle>Email Preview Cục Bộ</DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ mb: 1 }}>
+                        SMTP chưa được cấu hình. Nội dung email reset mật khẩu cho{' '}
+                        <strong>{previewInfo?.email}</strong> đã được lưu cục bộ.
+                    </Typography>
+                    {previewInfo?.previewUrl ? (
+                        <Link href={previewInfo.previewUrl} target="_blank" rel="noreferrer">
+                            Mở file preview email
+                        </Link>
+                    ) : null}
+                    {previewInfo?.previewPath ? (
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                            {previewInfo.previewPath}
+                        </Typography>
+                    ) : null}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClosePreviewDialog}>Đóng</Button>
+                </DialogActions>
+            </Dialog>
         </Container>
     );
 };

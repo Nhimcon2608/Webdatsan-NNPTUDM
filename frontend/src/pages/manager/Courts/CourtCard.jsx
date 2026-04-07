@@ -37,6 +37,8 @@ import reservationDetailService from "../../../services/reservationDetailService
 import branchService from "../../../services/branchServce";
 import { useAuth } from "../../../../context/AuthContext";
 
+const BOOKING_SLOT_MINUTES = 60;
+
 // === ĐỒNG BỘ VỚI DASHBOARD ===
 const theme = createTheme({
 	palette: {
@@ -81,20 +83,77 @@ const getMinStartTimeAndMaxEndTime = (prices) => {
 
 const generateTimeSlots = (start, end) => {
 	const slots = [];
-	for (let h = start; h < end; h += 0.5) {
-		const hour = Math.floor(h);
-		const minute = h % 1 === 0 ? "00" : "30";
-		const nextHour = Math.floor(h + 0.5);
-		const nextMinute = minute === "00" ? "30" : "00";
-		const endHour = nextHour > end ? end : nextHour;
-		slots.push(`${String(hour).padStart(2, "0")}:${minute} - ${String(endHour).padStart(2, "0")}:${nextMinute}`);
+	const startMinutes = Math.round(Number(start || 0) * 60);
+	const endMinutes = Math.round(Number(end || 0) * 60);
+
+	const toTimeLabel = (minutes) => {
+		const hour = Math.floor(minutes / 60);
+		const minute = minutes % 60;
+		return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+	};
+
+	for (
+		let currentStartMinutes = startMinutes;
+		currentStartMinutes + BOOKING_SLOT_MINUTES <= endMinutes;
+		currentStartMinutes += BOOKING_SLOT_MINUTES
+	) {
+		const currentEndMinutes = currentStartMinutes + BOOKING_SLOT_MINUTES;
+		slots.push(
+			`${toTimeLabel(currentStartMinutes)} - ${toTimeLabel(currentEndMinutes)}`
+		);
 	}
+
 	return slots;
 };
 
 const timeToMinutes = (t) => {
 	const [h, m] = t.split(":").map(Number);
 	return h * 60 + m;
+};
+
+const getBookingRangeInMinutes = (booking) => {
+	const safeStartTime = String(booking?.startTime || "--:--").slice(0, 5);
+	const startMinutes = safeStartTime.includes(":") ? timeToMinutes(safeStartTime) : 0;
+	const endTime = String(booking?.endTime || "").slice(0, 5);
+
+	if (endTime && endTime.includes(":")) {
+		return {
+			startMinutes,
+			endMinutes: timeToMinutes(endTime),
+		};
+	}
+
+	const rentalHours = Number(booking?.rentalTime || 0);
+	const extendedHours = Number(booking?.extendedTime || 0);
+	const totalMinutes = Math.round((rentalHours + extendedHours) * 60);
+
+	return {
+		startMinutes,
+		endMinutes: startMinutes + totalMinutes,
+	};
+};
+
+const doesBookingOverlapSlot = (booking, slotLabel) => {
+	const [slotStartLabel, slotEndLabel] = String(slotLabel || "").split(" - ");
+	if (!slotStartLabel || !slotEndLabel) {
+		return false;
+	}
+
+	const slotStartMinutes = timeToMinutes(slotStartLabel);
+	const slotEndMinutes = timeToMinutes(slotEndLabel);
+	const { startMinutes, endMinutes } = getBookingRangeInMinutes(booking);
+
+	return slotStartMinutes < endMinutes && slotEndMinutes > startMinutes;
+};
+
+const formatBookingTimeRange = (booking) => {
+	const safeStartTime = String(booking?.startTime || "--:--").slice(0, 5);
+	const { endMinutes } = getBookingRangeInMinutes(booking);
+	const endLabel = `${String(Math.floor(endMinutes / 60)).padStart(2, "0")}:${String(
+		endMinutes % 60,
+	).padStart(2, "0")}`;
+
+	return `${safeStartTime} - ${endLabel}`;
 };
 
 const getImageUrl = (p) => resolveBackendUrl(p);
@@ -196,7 +255,9 @@ const CourtCard = ({ court, isExpanded, toggleCourt, onStatusUpdate }) => {
 		}
 	};
 
-	const bookedCount = slots.length;
+	const bookedCount = fixedTimeSlots.filter((slot) =>
+		slots.some((booking) => doesBookingOverlapSlot(booking, slot))
+	).length;
 	const totalSlots = fixedTimeSlots.length;
 	const occupancyRate = totalSlots > 0 ? Math.round((bookedCount / totalSlots) * 100) : 0;
 
@@ -349,17 +410,12 @@ const CourtCard = ({ court, isExpanded, toggleCourt, onStatusUpdate }) => {
 								<Typography variant="h6" fontWeight="bold">
 									Lịch đặt hôm nay
 								</Typography>
-								<Chip label={`${bookedCount} đặt`} color="primary" size="small" />
+								<Chip label={`${bookedCount} khung giờ`} color="primary" size="small" />
 							</Stack>
 
 							<Stack spacing={1.5} sx={{ maxHeight: 500, overflowY: "auto", pr: 1 }}>
 								{fixedTimeSlots.map((slot, idx) => {
-									const slotStart = timeToMinutes(slot.split(" - ")[0]);
-									const booking = slots.find((b) => {
-										const s = timeToMinutes(b.startTime.slice(0, 5));
-										const dur = (b.rentalTime + (b.extendedTime || 0)) * 60;
-										return slotStart >= s && slotStart < s + dur;
-									});
+									const booking = slots.find((b) => doesBookingOverlapSlot(b, slot));
 
 									return (
 										<motion.div
@@ -400,8 +456,7 @@ const CourtCard = ({ court, isExpanded, toggleCourt, onStatusUpdate }) => {
 																	</Typography>
 																</Stack>
 																<Typography variant="caption" color="text.secondary">
-																	{(booking.startTime || "--:--").slice(0, 5)} -{" "}
-																	{(booking.endTime || "--:--").slice(0, 5)} •{" "}
+																	{formatBookingTimeRange(booking)} •{" "}
 																	{booking.rentalTime || 0}h
 																	{booking.extendedTime ? ` +${booking.extendedTime}h` : ""}
 																</Typography>

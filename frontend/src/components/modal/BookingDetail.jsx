@@ -51,7 +51,6 @@ const BookingDetail = forwardRef(({
     isModal = false,
     onClose
 }, ref) => {
-    const [remaining, setRemaining] = useState(0);
     const [showRecruitForm, setShowRecruitForm] = useState(false);
 
     const [recruitments, setRecruitments] = useState([]);
@@ -63,6 +62,12 @@ const BookingDetail = forwardRef(({
     const [editingIndex, setEditingIndex] = useState(null);
     const [errors, setErrors] = useState({});
     const [details, setDetails] = useState(reservationDetails || []);
+    const totalPrice = Number(reservationData?.totalPrice || 0);
+    const depositAmount = Number(reservationData?.deposit || 0);
+    const remainingAmount = Math.max(totalPrice - depositAmount, 0);
+    const bookingCreatedAt =
+        reservationData?.createdAt || reservationData?.createAt || reservationData?.bookAt || '';
+    const shouldShowPaymentSummary = totalPrice > 0 || depositAmount > 0;
 
     useEffect(() => {
         if (!reservationData) return;
@@ -105,11 +110,6 @@ const BookingDetail = forwardRef(({
             fetchCourt();
             fetchTemporaryRecruitment();
         }
-
-        if (reservationData?.totalPrice) {
-            setRemaining(parseFloat(reservationData.totalPrice) - parseFloat(reservationData.deposit || 0));
-        }
-
     }, [reservationData, branchInfo, isModal]);
 
     useEffect(() => {
@@ -346,7 +346,7 @@ const BookingDetail = forwardRef(({
                             <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
                                 <CalendarToday fontSize="small" sx={{ mr: 1 }} /> Ngày đặt
                             </Typography>
-                            <Typography variant="body1" fontWeight={500}>{dayjs(reservationData?.createAt).format('DD/MM/YYYY')}</Typography>
+                            <Typography variant="body1" fontWeight={500}>{dayjs(bookingCreatedAt).format('DD/MM/YYYY')}</Typography>
                         </Stack>
                     </Grid>
 
@@ -368,51 +368,40 @@ const BookingDetail = forwardRef(({
                         </Stack>
                     </Grid>
 
-                    {reservationData?.totalPrice ? (
+                    {shouldShowPaymentSummary ? (
                         <>
                             <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                                 <Stack spacing={0.5}>
                                     <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
                                         <Payments fontSize="small" sx={{ mr: 1 }} /> Tổng tiền
                                     </Typography>
-                                    <Typography variant="body1" fontWeight={500}>{formatVND(reservationData.totalPrice)}</Typography>
+                                    <Typography variant="body1" fontWeight={500}>{formatVND(totalPrice)}</Typography>
                                 </Stack>
                             </Grid>
 
-                            {status === 'waiting' && (
-                                <>
-                                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                                        <Stack spacing={0.5}>
-                                            <Typography variant="body2" color="text.secondary">Đã cọc</Typography>
-                                            <Typography variant="body1" fontWeight={500} color="primary.main">{formatVND(reservationData.deposit)}</Typography>
-                                        </Stack>
-                                    </Grid>
+                            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                                <Stack spacing={0.5}>
+                                    <Typography variant="body2" color="text.secondary">Đã cọc trước</Typography>
+                                    <Typography variant="body1" fontWeight={500} color="primary.main">{formatVND(depositAmount)}</Typography>
+                                </Stack>
+                            </Grid>
 
-                                    <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                                        <Stack spacing={0.5}>
-                                            <Typography variant="body2" color="text.secondary">Còn lại</Typography>
-                                            <Typography variant="body1" fontWeight={500} color={remaining > 0 ? 'secondary.main' : 'primary.main'}>{formatVND(remaining)}</Typography>
-                                        </Stack>
-                                    </Grid>
-                                </>
-                            )}
-
-                            {status === 'cancel' && (
-                                <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-                                    <Stack spacing={0.5}>
-                                        <Typography variant="body2" color="text.secondary">Đã cọc</Typography>
-                                        <Typography variant="body1" fontWeight={500} color="primary.main">{formatVND(reservationData.deposit)}</Typography>
-                                    </Stack>
-                                </Grid>
-                            )}
+                            <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+                                <Stack spacing={0.5}>
+                                    <Typography variant="body2" color="text.secondary">Còn lại cần thanh toán</Typography>
+                                    <Typography variant="body1" fontWeight={500} color={remainingAmount > 0 ? 'secondary.main' : 'primary.main'}>
+                                        {formatVND(remainingAmount)}
+                                    </Typography>
+                                </Stack>
+                            </Grid>
                         </>
                     ) : null}
                 </Grid>
 
-                {remaining > 0 && status === 'waiting' && (
+                {remainingAmount > 0 && !['cancel', 'finish'].includes(status) && (
                     <Box sx={{ mt: 3, p: 2, backgroundColor: theme.palette.primary.light + '20', borderRadius: theme.shape.borderRadius, borderLeft: `3px solid ${getStatusColor()}` }}>
                         <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-                            <strong>Lưu ý:</strong> Bạn cần thanh toán số tiền còn lại ({formatVND(remaining)}) khi đến sử dụng dịch vụ.
+                            <strong>Lưu ý:</strong> Bạn cần thanh toán số tiền còn lại ({formatVND(remainingAmount)}) khi đến sử dụng dịch vụ.
                         </Typography>
                     </Box>
                 )}

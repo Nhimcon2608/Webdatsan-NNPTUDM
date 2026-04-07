@@ -40,12 +40,21 @@ import voucherService from "../../../services/voucherService";
 import branchService from "../../../services/branchServce";
 import authService from "../../../services/authService";
 
+const toDateTimeLocalValue = (value) => (value ? dayjs(value).format("YYYY-MM-DDTHH:mm") : "");
+const toDisplayDateTime = (value) =>
+	value ? dayjs(value).format("DD/MM/YYYY HH:mm") : "Chưa đặt";
+
 const VoucherManagement = () => {
 	const theme = useTheme(); // ← Lấy theme đúng từ DashboardLayout
 	const [vouchers, setVouchers] = useState([]);
 	const [open, setOpen] = useState(false);
 	const [editingVoucher, setEditingVoucher] = useState(null);
-	const [form, setForm] = useState({ event: "", discountRate: "" });
+	const [form, setForm] = useState({
+		event: "",
+		discountRate: "",
+		startsAt: "",
+		endsAt: "",
+	});
 	const [errors, setErrors] = useState({});
 	const [branchId, setBranchId] = useState(null);
 	const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
@@ -96,6 +105,8 @@ const VoucherManagement = () => {
 		setForm({
 			event: voucher?.event || "",
 			discountRate: voucher?.discountRate || "",
+			startsAt: toDateTimeLocalValue(voucher?.startsAt),
+			endsAt: toDateTimeLocalValue(voucher?.endsAt),
 		});
 		setErrors({});
 		setOpen(true);
@@ -118,6 +129,15 @@ const VoucherManagement = () => {
 		if (!form.event.trim()) err.event = "Vui lòng nhập tên chương trình";
 		if (!form.discountRate || form.discountRate < 1 || form.discountRate > 100)
 			err.discountRate = "Giảm giá phải từ 1 đến 100%";
+		if (!form.startsAt) err.startsAt = "Vui lòng chọn ngày giờ bắt đầu";
+		if (!form.endsAt) err.endsAt = "Vui lòng chọn ngày giờ kết thúc";
+		if (
+			form.startsAt &&
+			form.endsAt &&
+			dayjs(form.endsAt).valueOf() <= dayjs(form.startsAt).valueOf()
+		) {
+			err.endsAt = "Ngày giờ kết thúc phải sau ngày giờ bắt đầu";
+		}
 		setErrors(err);
 		return Object.keys(err).length === 0;
 	};
@@ -127,20 +147,29 @@ const VoucherManagement = () => {
 		setDialogLoading(true);
 		try {
 			if (editingVoucher) {
-				// ← GỬI KÈM available ĐÚNG NHƯ HIỆN TẠI
 				await voucherService.updateVoucher(
 					editingVoucher.id,
 					{
 						...form,
+						discountRate: Number(form.discountRate),
+						startsAt: dayjs(form.startsAt).toISOString(),
+						endsAt: dayjs(form.endsAt).toISOString(),
 						branchId,
-						available: editingVoucher.available, // ← Dòng quan trọng nhất!
+						available: editingVoucher.available,
 					},
 					token
 				);
 				showMessage("Cập nhật voucher thành công!");
 			} else {
 				await voucherService.createVoucher(
-					{ ...form, branchId, available: true },
+					{
+						...form,
+						discountRate: Number(form.discountRate),
+						startsAt: dayjs(form.startsAt).toISOString(),
+						endsAt: dayjs(form.endsAt).toISOString(),
+						branchId,
+						available: true,
+					},
 					token
 				);
 				showMessage("Tạo voucher thành công!");
@@ -148,7 +177,7 @@ const VoucherManagement = () => {
 			handleClose();
 			loadVouchers();
 		} catch (err) {
-			showMessage(err.response?.data?.message || "Lưu thất bại", "error");
+			showMessage(err.message || err.response?.data?.message || "Lưu thất bại", "error");
 		} finally {
 			setDialogLoading(false);
 		}
@@ -225,7 +254,8 @@ const VoucherManagement = () => {
 										<TableRow sx={{ backgroundColor: theme.palette.mode === "dark" ? "#1a3c34" : "#f0f7f4" }}>
 											<TableCell sx={{ fontWeight: 700, color: theme.palette.primary.main }}>Chương trình</TableCell>
 											<TableCell align="center" sx={{ fontWeight: 700 }}>Giảm giá</TableCell>
-											<TableCell sx={{ fontWeight: 700 }}>Ngày tạo</TableCell>
+											<TableCell sx={{ fontWeight: 700 }}>Bắt đầu</TableCell>
+											<TableCell sx={{ fontWeight: 700 }}>Kết thúc</TableCell>
 											<TableCell align="center" sx={{ fontWeight: 700 }}>Trạng thái</TableCell>
 											<TableCell align="center" sx={{ fontWeight: 700 }}>Hành động</TableCell>
 										</TableRow>
@@ -241,11 +271,12 @@ const VoucherManagement = () => {
 												<TableCell align="center">
 													<Chip label={`${v.discountRate}%`} color="primary" size="small" sx={{ fontWeight: "bold", minWidth: 64 }} />
 												</TableCell>
-												<TableCell>{dayjs(v.createAt).format("DD/MM/YYYY HH:mm")}</TableCell>
+												<TableCell>{toDisplayDateTime(v.startsAt)}</TableCell>
+												<TableCell>{toDisplayDateTime(v.endsAt)}</TableCell>
 												<TableCell align="center">
 													<Chip
-														label={v.available ? "Hoạt động" : "Đã khóa"}
-														color={v.available ? "success" : "default"}
+														label={v.statusLabel || (v.available ? "Hoạt động" : "Đã khóa")}
+														color={v.statusColor || (v.available ? "success" : "default")}
 														size="small"
 														sx={{ minWidth: 100, fontWeight: 600 }}
 													/>
@@ -313,6 +344,31 @@ const VoucherManagement = () => {
 						error={!!errors.discountRate}
 						helperText={errors.discountRate || "Từ 1 đến 100"}
 						inputProps={{ min: 1, max: 100 }}
+						sx={{ mt: 3 }}
+					/>
+					<TextField
+						fullWidth
+						label="Ngày giờ bắt đầu"
+						name="startsAt"
+						type="datetime-local"
+						value={form.startsAt}
+						onChange={handleChange}
+						error={!!errors.startsAt}
+						helperText={errors.startsAt}
+						InputLabelProps={{ shrink: true }}
+						sx={{ mt: 3 }}
+					/>
+					<TextField
+						fullWidth
+						label="Ngày giờ hết hạn"
+						name="endsAt"
+						type="datetime-local"
+						value={form.endsAt}
+						onChange={handleChange}
+						error={!!errors.endsAt}
+						helperText={errors.endsAt}
+						InputLabelProps={{ shrink: true }}
+						inputProps={{ min: form.startsAt || undefined }}
 						sx={{ mt: 3 }}
 					/>
 				</DialogContent>
