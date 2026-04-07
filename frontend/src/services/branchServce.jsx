@@ -88,7 +88,11 @@ const branchService = {
     updateBranch: async (branchId, branchData, token) => {
         if (!token) throw new Error("Không tìm thấy token đăng nhập.");
         if (!branchId) throw new Error("Không tìm thấy ID chi nhánh.");
-        if (!branchData || Object.keys(branchData).length === 0) {
+        const isMultipart = typeof FormData !== "undefined" && branchData instanceof FormData;
+        if (
+            !branchData ||
+            (!isMultipart && Object.keys(branchData).length === 0)
+        ) {
             throw new Error("Dữ liệu chi nhánh không hợp lệ hoặc rỗng.");
         }
 
@@ -97,7 +101,10 @@ const branchService = {
                 apiRoutes.branches.byId(branchId),
                 branchData,
                 {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        ...(isMultipart ? { "Content-Type": "multipart/form-data" } : {}),
+                    },
                 }
             );
             const updatedBranch = normalizeBranch(unwrapApiData(response));

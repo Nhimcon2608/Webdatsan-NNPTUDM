@@ -67,7 +67,7 @@ export function resolveBackendUrl(path) {
 		return "";
 	}
 
-	if (/^https?:\/\//i.test(normalizedPath)) {
+	if (/^(https?:\/\/|data:|blob:)/i.test(normalizedPath)) {
 		return normalizedPath;
 	}
 

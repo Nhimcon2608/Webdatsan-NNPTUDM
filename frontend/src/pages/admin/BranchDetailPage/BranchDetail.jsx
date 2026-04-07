@@ -51,6 +51,7 @@ import AddCourtModal from './AddCourtModal';
 import DeleteImageModal from './DeleteImageModal';
 
 import badmintionCourtService from '../../../services/badmintonCourtService';
+import { resolveBackendUrl } from '../../../services/api';
 
 
 const BranchDetail = ({ theme, branch = {}, badmintonCourts = [], reviews = [] }) => {
@@ -177,7 +178,7 @@ const BranchDetail = ({ theme, branch = {}, badmintonCourts = [], reviews = [] }
                         >
                             <Box
                                 component="img"
-                                src={`${import.meta.env.VITE_API_URL}/${branch.imagePath}`}
+                                src={resolveBackendUrl(branch.imagePath)}
                                 alt={branch.branchName || 'Chi nhánh'}
                                 sx={{
                                     width: '100%',
@@ -393,7 +394,7 @@ const BranchDetail = ({ theme, branch = {}, badmintonCourts = [], reviews = [] }
                                                                                     height: '100%',
                                                                                     objectFit: 'cover'
                                                                                 }}
-                                                                                image={`${import.meta.env.VITE_API_URL}/${court.images[courtImageIndexes[court.id]]?.imagePath}`}
+                                                                                image={resolveBackendUrl(court.images[courtImageIndexes[court.id]]?.imagePath)}
                                                                                 alt={`Sân số ${court.ordinalNumber}`}
                                                                                 onError={(e) => {
                                                                                     e.target.onerror = null;

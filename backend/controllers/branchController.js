@@ -1,12 +1,17 @@
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 import { serializeBranch } from "../utils/branchView.js";
+import { deleteUploadedFile, persistUploadedFile } from "../utils/uploadStorage.js";
 
 function toBoolean(value) {
   if (typeof value === "boolean") {
     return value;
   }
   return String(value).toLowerCase() === "true";
+}
+
+function getUploadedFile(req) {
+  return req.file || req.files?.[0] || null;
 }
 
 async function loadBranchContext() {
@@ -88,16 +93,48 @@ export async function updateBranch(req, res) {
     return res.status(404).json({ success: false, message: "Branch not found" });
   }
 
+  if (
+    req.context?.role === "MANAGER" &&
+    existing.managerAccountId &&
+    existing.managerAccountId !== req.context?.accountId
+  ) {
+    return res.status(403).json({ success: false, message: "Forbidden" });
+  }
+
+  const file = getUploadedFile(req);
+  const uploadedImagePath = file
+    ? await persistUploadedFile(file, ["branches", branchId])
+    : null;
   const payload = { ...(req.body || {}) };
+
+  if (uploadedImagePath) {
+    payload.imagePath = uploadedImagePath;
+  }
+
   if (payload.isCooperated !== undefined || payload.cooperated !== undefined) {
     payload.isCooperated = toBoolean(payload.isCooperated ?? payload.cooperated);
     delete payload.cooperated;
   }
 
+  if (payload.branchName !== undefined && payload.name === undefined) {
+    payload.name = payload.branchName;
+  }
+
+  if (payload.name !== undefined && payload.branchName === undefined) {
+    payload.branchName = payload.name;
+  }
+
+  const previousImagePath = existing.imagePath || "";
+  const nextImagePath = payload.imagePath;
   const updated = await updateById("branches", branchId, payload);
 
   if (!updated) {
+    await deleteUploadedFile(uploadedImagePath);
     return res.status(404).json({ success: false, message: "Branch not found" });
+  }
+
+  if (nextImagePath !== undefined && nextImagePath !== previousImagePath) {
+    await deleteUploadedFile(previousImagePath);
   }
 
   const context = await loadBranchContext();

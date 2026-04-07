@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import {
@@ -27,6 +27,7 @@ import { stringToColor } from '../../utils/stringToColor';
 
 import { useAuth } from '../../../context/AuthContext';
 import authService from '../../services/authService';
+import { resolveBackendUrl } from '../../services/api';
 
 
 const StyledListItemButton = styled(ListItemButton)(({ theme }) => ({
@@ -172,7 +173,7 @@ const Sidebar = ({
                         justifyContent: 'center'
                     }}>
                         {displayImage ?
-                            <Avatar src={`${import.meta.env.VITE_API_URL}/${displayImage}`} alt={displayName} />
+                            <Avatar src={resolveBackendUrl(displayImage)} alt={displayName} />
 
                             : <Avatar style={{ backgroundColor: stringToColor(displayName) }}>
                                 {displayInitial}

@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 import { Logout, Notifications, Menu as MenuIcon } from "@mui/icons-material";
 import { useAuth } from "../../../context/AuthContext";
+import { resolveBackendUrl } from "../../services/api";
 
 const Topbar = ({ toggleSidebar, isSidebarCollapsed, children, theme }) => {
 	const { user, logout } = useAuth();
@@ -21,8 +22,9 @@ const Topbar = ({ toggleSidebar, isSidebarCollapsed, children, theme }) => {
 			hour12: false,
 		})
 	);
-	const [notifications, setNotifications] = useState(0);
+	const [notifications] = useState(0);
 	const ownerName = user?.fullName || user?.username || "Chủ sân";
+	const displayImage = user?.imagePath || user?.avatarUrl || "";
 
 	useEffect(() => {
 		const interval = setInterval(() => {
@@ -77,6 +79,8 @@ const Topbar = ({ toggleSidebar, isSidebarCollapsed, children, theme }) => {
 					</IconButton>
 
 					<Avatar
+						src={resolveBackendUrl(displayImage)}
+						alt={ownerName}
 						sx={{
 							bgcolor: "primary.main",
 							color: "primary.contrastText",

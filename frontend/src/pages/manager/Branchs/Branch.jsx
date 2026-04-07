@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
 	Container,
 	Typography,
@@ -12,7 +12,6 @@ import {
 	CardContent,
 	Divider,
 	Snackbar,
-	Tooltip,
 	InputAdornment,
 	Skeleton,
 	useTheme,
@@ -28,10 +27,12 @@ import {
 	Edit,
 	AccountBalance,
 	CreditCard,
+	CloudUpload,
 } from "@mui/icons-material";
 import { MenuItem } from "@mui/material";
 import branchService from "../../../services/branchServce";
 import authService from "../../../services/authService";
+import { resolveBackendUrl } from "../../../services/api";
 
 const BranchInfo = () => {
 	const theme = useTheme();
@@ -48,7 +49,9 @@ const BranchInfo = () => {
 		branchName: "",
 		bankName: "",
 		bankNumber: "",
+		imagePath: "",
 	});
+	const [selectedImageFile, setSelectedImageFile] = useState(null);
 	const [errors, setErrors] = useState({
 		email: "",
 		address: "",
@@ -99,7 +102,6 @@ const BranchInfo = () => {
 
 	// === TÍNH TOÁN MÀU THEO THEME ===
 	const labelColor = theme.palette.mode === "dark" ? "grey.300" : "grey.800";
-	const badgeBg = theme.palette.mode === "dark" ? "grey.700" : "grey.100";
 
 	// === FETCH BRANCH ===
 	useEffect(() => {
@@ -121,7 +123,9 @@ const BranchInfo = () => {
 					branchName: branchData.branchName || "",
 					bankName: branchData.bankName || "",
 					bankNumber: branchData.bankNumber || "",
+					imagePath: branchData.imagePath || "",
 				});
+				setSelectedImageFile(null);
 			} catch (err) {
 				setError(err.message || "Không thể tải thông tin chi nhánh.");
 			} finally {
@@ -154,6 +158,23 @@ const BranchInfo = () => {
 		[validateField]
 	);
 
+	const handleImageChange = useCallback((event) => {
+		const file = event.target.files?.[0];
+		if (!file) {
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onloadend = () => {
+			setUpdatedBranch((prev) => ({
+				...prev,
+				imagePath: reader.result,
+			}));
+			setSelectedImageFile(file);
+		};
+		reader.readAsDataURL(file);
+	}, []);
+
 	const validateAll = useCallback(() => {
 		const fields = ["branchName", "email", "address", "bankName", "bankNumber"];
 		const newErrors = {};
@@ -178,8 +199,36 @@ const BranchInfo = () => {
 
 		setSaving(true);
 		try {
-			await branchService.updateBranch(branch.id, updatedBranch, token);
-			setBranch((prev) => ({ ...prev, ...updatedBranch }));
+			let payload = {
+				email: updatedBranch.email,
+				address: updatedBranch.address,
+				description: updatedBranch.description,
+				branchName: updatedBranch.branchName,
+				bankName: updatedBranch.bankName,
+				bankNumber: updatedBranch.bankNumber,
+			};
+
+			if (selectedImageFile) {
+				const formData = new FormData();
+				Object.entries(payload).forEach(([key, value]) => {
+					formData.append(key, value || "");
+				});
+				formData.append("file", selectedImageFile);
+				payload = formData;
+			}
+
+			const savedBranch = await branchService.updateBranch(branch.id, payload, token);
+			setBranch(savedBranch);
+			setUpdatedBranch({
+				email: savedBranch.email || "",
+				address: savedBranch.address || "",
+				description: savedBranch.description || "",
+				branchName: savedBranch.branchName || "",
+				bankName: savedBranch.bankName || "",
+				bankNumber: savedBranch.bankNumber || "",
+				imagePath: savedBranch.imagePath || "",
+			});
+			setSelectedImageFile(null);
 			setEditMode(false);
 			setSuccess("Cập nhật thành công!");
 			setTimeout(() => setSuccess(null), 3000);
@@ -188,7 +237,7 @@ const BranchInfo = () => {
 		} finally {
 			setSaving(false);
 		}
-	}, [branch?.id, updatedBranch, token, validateAll]);
+		}, [branch?.id, selectedImageFile, updatedBranch, token, validateAll]);
 
 	// === CANCEL ===
 	const handleCancel = useCallback(() => {
@@ -201,7 +250,9 @@ const BranchInfo = () => {
 			branchName: branch?.branchName || "",
 			bankName: branch?.bankName || "",
 			bankNumber: branch?.bankNumber || "",
+			imagePath: branch?.imagePath || "",
 		});
+		setSelectedImageFile(null);
 	}, [branch]);
 
 	// === LOADING SKELETON ===
@@ -238,6 +289,8 @@ const BranchInfo = () => {
 			</Container>
 		);
 	}
+
+	const displayBranchImage = updatedBranch.imagePath || branch?.imagePath || "";
 
 	return (
 		<Container maxWidth="md" sx={{ mt: 6, mb: 6 }}>
@@ -291,6 +344,60 @@ const BranchInfo = () => {
 						Thông Tin Chi Nhánh
 					</Typography>
 					<Divider sx={{ mb: 4, bgcolor: "divider" }} />
+
+					<Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 4 }}>
+						<Box
+							sx={{
+								width: "100%",
+								maxWidth: 520,
+								aspectRatio: "16 / 9",
+								borderRadius: 3,
+								overflow: "hidden",
+								border: `1px solid ${theme.palette.divider}`,
+								bgcolor: theme.palette.action.hover,
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								boxShadow: 2,
+							}}
+						>
+							{displayBranchImage ? (
+								<Box
+									component="img"
+									src={resolveBackendUrl(displayBranchImage)}
+									alt={updatedBranch.branchName || branch?.branchName || "Ảnh chi nhánh"}
+									sx={{
+										width: "100%",
+										height: "100%",
+										objectFit: "cover",
+									}}
+								/>
+							) : (
+								<Typography variant="body1" color="text.secondary">
+									Chi nhánh chưa có ảnh đại diện
+								</Typography>
+							)}
+						</Box>
+
+						{editMode ? (
+							<>
+								<Button
+									component="label"
+									variant="outlined"
+									startIcon={<CloudUpload />}
+									sx={{ mt: 2, borderRadius: 2, fontWeight: 600 }}
+								>
+									Chọn ảnh chi nhánh
+									<input hidden accept="image/*" type="file" onChange={handleImageChange} />
+								</Button>
+								{selectedImageFile ? (
+									<Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+										Đã chọn: {selectedImageFile.name}
+									</Typography>
+								) : null}
+							</>
+						) : null}
+					</Box>
 
 					<Grid container spacing={3}>
 						{/* MÃ CHI NHÁNH */}

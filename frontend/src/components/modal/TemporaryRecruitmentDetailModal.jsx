@@ -36,6 +36,7 @@ import LoginModal from "./LoginModal";
 
 import temporaryRecruitmentService from "../../services/temporaryRecruitmentService";
 import authService from "../../services/authService";
+import { resolveBackendUrl } from "../../services/api";
 
 import { stringToColor } from "../../utils/stringToColor";
 
@@ -68,8 +69,8 @@ const TemporaryRecruitmentDetailModal = ({
             try {
                 const res = await temporaryRecruitmentService.getById(data.id);
                 setRecruitmentDetails(res);
-            } catch (e) {
-                console.error(e);
+            } catch (error) {
+                console.error(error);
             } finally {
                 setLoading(false);
             }
@@ -140,7 +141,7 @@ const TemporaryRecruitmentDetailModal = ({
                                 {
                                     detailData.imagePath ? (
                                         <Avatar
-                                            src={`${import.meta.env.VITE_API_URL}/${detailData.imagePath}`}
+                                            src={resolveBackendUrl(detailData.imagePath)}
                                             alt={displayName}
                                             sx={{ width: 56, height: 56, mr: 2 }}
                                         />

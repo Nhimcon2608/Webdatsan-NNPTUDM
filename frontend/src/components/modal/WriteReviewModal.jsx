@@ -27,6 +27,7 @@ import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 
 import reviewService from '../../services/reviewService';
+import { resolveBackendUrl } from '../../services/api';
 
 const style = {
     position: 'absolute',
@@ -219,7 +220,7 @@ const ReviewModal = ({ open, onClose, branch, theme, review, player, onReviewSub
                         }}>
                             <Box display="flex" flexDirection={isMobile ? 'column' : 'row'} gap={3}>
                                 <Avatar
-                                    src={`${import.meta.env.VITE_API_URL}/${branch?.imagePath}`}
+                                    src={resolveBackendUrl(branch?.imagePath)}
                                     alt={branch?.branchName}
                                     sx={{
                                         width: 120,
