@@ -3439,20 +3439,20 @@ const BranchDetail = () => {
 																		height: 36,
 																	}}
 																>
-																	{review.username.charAt(0)}
+																	{(review.username || "Người dùng").charAt(0).toUpperCase()}
 																</Avatar>
 																<Typography
 																	variant="subtitle1"
 																	color="text.primary"
 																>
-																	{review.username}
+																	{review.username || "Người dùng"}
 																</Typography>
 															</Box>
 															<Typography
 																variant="body2"
 																color="text.secondary"
 															>
-																{formatTimeDate(review.createAt)}
+																{formatTimeDate(review.createAt || review.createdAt)}
 															</Typography>
 														</Box>
 														<Rating
