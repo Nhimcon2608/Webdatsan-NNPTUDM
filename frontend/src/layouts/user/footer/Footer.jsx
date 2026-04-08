@@ -150,13 +150,13 @@ const Footer = () => {
 							<InfoBox>
 								<Phone sx={{ mr: 2, color: theme.palette.primary.light }} />
 								<Typography variant="body2" sx={{ color: '#d1d5db' }}>
-									0971 202 857
+									0123 456 789
 								</Typography>
 							</InfoBox>
 							<InfoBox>
 								<Phone sx={{ mr: 2, color: theme.palette.primary.light }} />
 								<Typography variant="body2" sx={{ color: '#d1d5db' }}>
-									0354 491 594
+									0123 456789
 								</Typography>
 							</InfoBox>
 
@@ -290,7 +290,7 @@ const Footer = () => {
 					}}
 				>
 					<Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.6)', mb: { xs: 2, md: 0 } }}>
-						© {new Date().getFullYear()} BcB by Vo Thai Duong & Nguyen Duc Tuan
+						© {new Date().getFullYear()} BcB by QTQT
 					</Typography>
 
 					<Box sx={{ display: 'flex', gap: { xs: 2, md: 4 } }}>
