@@ -1,6 +1,9 @@
-// Controller chính cho danh sách reservation, tạo mới, cập nhật và đổi trạng thái.
+// Controller chính cho reservation và flow đặt sân.
+import { randomUUID } from "crypto";
+
 import { created, ok } from "../utils/response.js";
 import { getRequestAccount } from "../middleware/auth.js";
+import { getCollection } from "../utils/database.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 import {
   buildReservationDetailsMap,
@@ -8,6 +11,14 @@ import {
   normalizeReservationStatus,
   serializeReservation,
 } from "../utils/reservationView.js";
+import {
+  buildReservationDetailDocuments,
+  buildReservationSlotLocks,
+  claimReservationSlotLocks,
+  findConflictingReservationSlot,
+  normalizeReservationDetails,
+  releaseReservationSlotLocks,
+} from "../utils/reservationSlots.js";
 
 function toDateOnly(value) {
   return String(value || "").slice(0, 10);
@@ -43,8 +54,24 @@ async function serializeReservations(rows) {
   return rows.map((row) => serializeReservation(row, context));
 }
 
+function isDuplicateKeyError(error) {
+  return Number(error?.code) === 11000;
+}
+
+async function cleanupIncompleteReservation(reservationId) {
+  const normalizedReservationId = String(reservationId || "").trim();
+  if (!normalizedReservationId) {
+    return;
+  }
+
+  await Promise.all([
+    getCollection("reservations").deleteOne({ id: normalizedReservationId }),
+    getCollection("reservationDetails").deleteMany({ reservationId: normalizedReservationId }),
+    releaseReservationSlotLocks(normalizedReservationId),
+  ]);
+}
+
 export async function getReservations(req, res) {
-  // Đọc reservation hỗ trợ filter theo ngày, trạng thái, phạm vi user và loại trừ bản ghi đã hủy.
   const {
     branchId,
     date,
@@ -112,17 +139,73 @@ export async function getReservationById(req, res) {
 }
 
 export async function createReservation(req, res) {
-  // Reservation mới mặc định gắn với user hiện tại và ngày hôm nay nếu không truyền rõ.
   const payload = req.body || {};
-  const createdRow = await insert("reservations", {
-    ...payload,
-    userAccountId: payload.userAccountId || req.context.accountId,
-    status: payload.status || "BOOKED",
-    bookDate: payload.bookDate || new Date().toISOString().slice(0, 10),
-  });
+  const reservationId = randomUUID();
+  const bookDate = String(payload.bookDate || payload.bookAt || new Date().toISOString()).slice(0, 10);
+  const reservationDetailsInput = Array.isArray(payload.reservationDetails) ? payload.reservationDetails : [];
 
-  const context = await loadReservationContext();
-  return created(res, serializeReservation(createdRow, context), "Reservation created");
+  if (!reservationDetailsInput.length) {
+    const createdRow = await insert("reservations", {
+      ...payload,
+      id: reservationId,
+      userAccountId: payload.userAccountId || req.context.accountId,
+      status: payload.status || "BOOKED",
+      bookDate,
+    });
+
+    const context = await loadReservationContext();
+    return created(res, serializeReservation(createdRow, context), "Reservation created");
+  }
+
+  let normalizedDetails;
+  try {
+    normalizedDetails = normalizeReservationDetails(reservationDetailsInput, bookDate);
+  } catch (error) {
+    return res.status(400).json({ success: false, message: error.message });
+  }
+
+  const slotLocks = buildReservationSlotLocks(reservationId, normalizedDetails);
+
+  try {
+    // Claim slot trước để chặn double booking đồng thời.
+    await claimReservationSlotLocks(slotLocks);
+  } catch (error) {
+    if (isDuplicateKeyError(error)) {
+      const conflict = await findConflictingReservationSlot(slotLocks);
+      const conflictMessage = conflict
+        ? `Court ${conflict.courtId} is already booked on ${conflict.slotDate} at ${conflict.slotStart}`
+        : "Selected court slot is already booked";
+
+      return res.status(409).json({
+        success: false,
+        message: conflictMessage,
+      });
+    }
+
+    throw error;
+  }
+
+  try {
+    const createdRow = await insert("reservations", {
+      ...payload,
+      id: reservationId,
+      courtId: payload.courtId || normalizedDetails[0]?.courtId || "",
+      userAccountId: payload.userAccountId || req.context.accountId,
+      status: payload.status || "BOOKED",
+      bookDate,
+    });
+
+    await getCollection("reservationDetails").insertMany(
+      buildReservationDetailDocuments(reservationId, normalizedDetails),
+      { ordered: true },
+    );
+
+    const context = await loadReservationContext();
+    return created(res, serializeReservation(createdRow, context), "Reservation created");
+  } catch (error) {
+    await cleanupIncompleteReservation(reservationId);
+    throw error;
+  }
 }
 
 export async function updateReservation(req, res) {
@@ -136,12 +219,16 @@ export async function updateReservation(req, res) {
   if (!updated) {
     return res.status(404).json({ success: false, message: "Reservation not found" });
   }
+
+  if (isCancelledStatus(updated.status)) {
+    await releaseReservationSlotLocks(updated.id);
+  }
+
   const context = await loadReservationContext();
   return ok(res, serializeReservation(updated, context), "Reservation updated");
 }
 
 export async function bulkUpdateReservations(req, res) {
-  // Bulk update trạng thái phục vụ các luồng manager/admin thao tác trên nhiều booking cùng lúc.
   const reservationIds = Array.isArray(req.body?.reservationIds) ? req.body.reservationIds : [];
   const status = req.body?.status;
 
@@ -160,6 +247,10 @@ export async function bulkUpdateReservations(req, res) {
       ),
     )
   ).filter(Boolean);
+
+  await releaseReservationSlotLocks(
+    updatedRows.filter((row) => isCancelledStatus(row.status)).map((row) => row.id),
+  );
 
   return ok(res, await serializeReservations(updatedRows), "Reservations updated");
 }

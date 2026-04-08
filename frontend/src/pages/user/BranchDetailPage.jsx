@@ -94,7 +94,6 @@ import reviewService from "../../services/reviewService";
 import badmintionCourtService from "../../services/badmintonCourtService";
 import voucherService from "../../services/voucherService";
 import reservationService from "../../services/reservationService";
-import reservationDetailService from "../../services/reservationDetailService";
 import userService from "../../services/userService";
 import authService from "../../services/authService";
 import priceService from "../../services/priceService";
@@ -1266,8 +1265,14 @@ const BranchDetail = () => {
 			};
 		});
 
+		const bookingDate = formatDate(selectedDate);
+		const rentalDetails = getRentalDetails(
+			bookingInfo,
+			bookingDate.slice(0, 10)
+		);
+
 		let reservationData = {
-			bookAt: formatDate(selectedDate),
+			bookAt: bookingDate,
 			totalPrice: calculateDiscountedPrice(),
 			deposit:
 				calculateDiscountedPrice() - (calculateDiscountedPrice() * 50) / 100,
@@ -1275,38 +1280,33 @@ const BranchDetail = () => {
 			playerId: profileData.id,
 			voucherId: selectedVoucher ? selectedVoucher.id : null,
 			branchId: branchId,
+			reservationDetails: rentalDetails,
 		};
 
-		const reservationResponse = await reservationService.postReservation(reservationData);
-		const rentalDetails = getRentalDetails(bookingInfo, reservationResponse.id);
-		// console.log(rentalDetails);
-
 		try {
-			for (const detail of rentalDetails) {
-				// console.log('detail:', detail);
-				await reservationDetailService.postReservationDetail(detail);
-				// console.log('Reservation detail successfully sent:', detail);
+			const reservationResponse = await reservationService.postReservation(reservationData);
+
+			setSelectedSlots([]);
+			setShowBookingSummary(false);
+			setRefreshFlag((prev) => !prev);
+
+			const paymentRequest = {
+				amount: reservationData.deposit,
+				resIds: [reservationResponse.id],
+				orderInfo: "Đặt cọc cho lịch đặt sân: " + reservationResponse.id,
 			}
+
+			await paymentService.payWithMomo(paymentRequest);
 		} catch (error) {
-			console.error("Error sending reservation details:", error);
-			throw error;
+			console.error("Error creating reservation:", error);
+			setRefreshFlag((prev) => !prev);
+			alert(error.response?.data?.message || error.message || "Đặt sân thất bại.");
 		}
-
-		setSelectedSlots([]);
-		setShowBookingSummary(false);
-
-		const paymentRequest = {
-			amount: reservationData.deposit,
-			resIds: [reservationResponse.id],
-			orderInfo: "Đặt cọc cho lịch đặt sân: " + reservationResponse.id,
-		}
-
-		await paymentService.payWithMomo(paymentRequest);
 	};
 
 	// console.log(selectedDate);
 
-	function getRentalDetails(details, reservationId) {
+	function getRentalDetails(details, slotDate) {
 		const result = [];
 
 		details.forEach(({ courtId, slots }) => {
@@ -1325,9 +1325,10 @@ const BranchDetail = () => {
 					prevEnd = currentEnd;
 				} else {
 					result.push({
-						reservationId: reservationId,
 						badmintonCourtId: courtId,
+						slotDate,
 						startTime: groupStart,
+						endTime: prevEnd,
 						rentalTime: formatToHours(totalDuration),
 						extendedTime: 0,
 					});
@@ -1339,9 +1340,10 @@ const BranchDetail = () => {
 			}
 
 			result.push({
-				reservationId: reservationId,
 				badmintonCourtId: courtId,
+				slotDate,
 				startTime: groupStart,
+				endTime: prevEnd,
 				rentalTime: formatToHours(totalDuration),
 				extendedTime: 0,
 			});

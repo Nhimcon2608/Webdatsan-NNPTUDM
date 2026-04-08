@@ -25,6 +25,15 @@ async function ensureIndexes(db) {
       await db.collection(resource).createIndex({ id: 1 }, { unique: true });
     }),
   );
+
+  await db.collection("reservationSlotLocks").createIndex(
+    { courtId: 1, slotDate: 1, slotStart: 1 },
+    { unique: true, name: "reservation_slot_unique" },
+  );
+  await db.collection("reservationSlotLocks").createIndex(
+    { reservationId: 1 },
+    { name: "reservation_slot_reservation_id" },
+  );
 }
 
 async function seedCollection(db, resource) {

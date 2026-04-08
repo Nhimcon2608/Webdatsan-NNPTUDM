@@ -128,6 +128,8 @@ export const defaults = {
       createdAt: nowIso(),
     },
   ],
+  // Reservation slot lock giữ chỗ theo từng khung giờ nhỏ để chặn double booking đồng thời.
+  reservationSlotLocks: [],
   // Fixed booking được sinh theo nhu cầu nên seed mặc định để trống.
   fixedBookings: [],
   // Review lưu phản hồi của người dùng cho branch.

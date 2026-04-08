@@ -5,6 +5,10 @@ function normalizeRole(role) {
   return String(role || "").trim().toUpperCase();
 }
 
+function getAuthFailureMessage(req) {
+  return req.context?.authError?.message || "Authentication required";
+}
+
 // Account và role được lưu lại vào req.context để phần sau tái sử dụng.
 export async function getRequestAccount(req) {
   if (req.context?.account !== undefined) {
@@ -38,7 +42,7 @@ export async function requireAuth(req, res, next) {
   if (!account) {
     return res.status(401).json({
       success: false,
-      message: "Authentication required",
+      message: getAuthFailureMessage(req),
     });
   }
 
@@ -55,7 +59,7 @@ export function requireRoles(...allowedRoles) {
     if (!account) {
       return res.status(401).json({
         success: false,
-        message: "Authentication required",
+        message: getAuthFailureMessage(req),
       });
     }
 

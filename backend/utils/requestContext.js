@@ -1,18 +1,31 @@
+import { toAuthErrorMessage, verifyAuthToken } from "./jwt.js";
+
 // Đọc token/header một lần rồi gắn auth context gọn nhẹ vào request.
 export function attachRequestContext(req, _res, next) {
   const authHeader = req.headers.authorization || "";
   const headerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
-  const queryToken = typeof req.query?.token === "string" ? req.query.token.trim() : null;
-  const token = headerToken || queryToken || null;
-  const tokenAccountId = token?.startsWith("mock-token-") ? token.slice("mock-token-".length) : null;
-  const headerAccountId =
-    typeof req.headers["x-account-id"] === "string" ? req.headers["x-account-id"].trim() : null;
+  const token = headerToken || null;
+  let tokenPayload = null;
+  let authError = null;
+
+  if (token) {
+    try {
+      tokenPayload = verifyAuthToken(token);
+    } catch (error) {
+      authError = {
+        name: error?.name || "AuthError",
+        message: toAuthErrorMessage(error),
+      };
+    }
+  }
 
   req.context = {
     token,
-    accountId: tokenAccountId || headerAccountId || null,
+    tokenPayload,
+    accountId: tokenPayload?.sub ? String(tokenPayload.sub).trim() : null,
     account: undefined,
-    role: null,
+    role: tokenPayload?.role ? String(tokenPayload.role).trim().toUpperCase() : null,
+    authError,
   };
 
   next();
