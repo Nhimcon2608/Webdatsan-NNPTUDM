@@ -1,7 +1,8 @@
-// Xử lý slot detail của reservation và tra cứu theo sân/ngày cho khung giờ đã đặt.
+// Xử lý reservation detail và tra cứu slot đã đặt.
 import { created, ok } from "../utils/response.js";
 import { insert, list } from "../utils/store.js";
 import {
+  isCancelledStatus,
   serializeReservationDetail,
 } from "../utils/reservationView.js";
 
@@ -16,7 +17,6 @@ export async function createReservationDetail(req, res) {
 }
 
 export async function getReservationDetails(req, res) {
-  // Khi có courtId, route này hoạt động như tra cứu chiếm chỗ đơn giản cho một sân trong một ngày.
   const { courtId, date } = req.query;
   const targetDate =
     !date || date === "today" ? new Date().toISOString().slice(0, 10) : String(date).slice(0, 10);
@@ -37,8 +37,13 @@ export async function getReservationDetails(req, res) {
 
   const todayRows = rows.filter((item) => {
     const targetCourtId = item.courtId || item.badmintonCourtId;
-    const slotDate = item.slotDate || reservationMap.get(item.reservationId)?.bookDate;
-    return targetCourtId === courtId && String(slotDate).slice(0, 10) === targetDate;
+    const reservation = reservationMap.get(item.reservationId);
+    const slotDate = item.slotDate || reservation?.bookDate;
+    return (
+      targetCourtId === courtId &&
+      String(slotDate).slice(0, 10) === targetDate &&
+      !isCancelledStatus(reservation?.status)
+    );
   });
 
   const serializedRows = todayRows.map((item) => {

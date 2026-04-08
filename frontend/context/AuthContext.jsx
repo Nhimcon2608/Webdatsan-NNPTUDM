@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }) => {
                 } catch (error) {
                     console.error('Lỗi lấy thông tin user:', error);
                     localStorage.removeItem('authToken');
+                    delete apiClient.defaults.headers.common['Authorization'];
                 }
             }
             if (isMounted) setLoading(false);

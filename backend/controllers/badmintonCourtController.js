@@ -1,4 +1,4 @@
-// Quản lý danh sách court, tạo mới và cập nhật trạng thái trong một branch.
+// Quản lý danh sách court, trạng thái và tạo mới trong branch.
 import { created, ok } from "../utils/response.js";
 import { findById, insert, list, updateById } from "../utils/store.js";
 
@@ -59,7 +59,6 @@ function toOrdinalNumber(value) {
 }
 
 export async function getCourts(req, res) {
-  // Query court có thể lọc theo branch, manager hoặc trạng thái khả dụng đã chuẩn hóa.
   const { branchId, managerAccountId, status } = req.query;
   let rows = await list("badmintonCourts");
 
@@ -82,7 +81,6 @@ export async function getCourts(req, res) {
 }
 
 export async function updateCourt(req, res) {
-  // Nếu không có patch cụ thể, endpoint sẽ tự đảo trạng thái active/inactive của court.
   const { courtId } = req.params;
   const current = (await list("badmintonCourts")).find((item) => item.id === courtId);
 
@@ -106,7 +104,6 @@ export async function updateCourt(req, res) {
 }
 
 export async function createCourt(req, res) {
-  // Tạo court có kiểm tra ownership của branch và chặn trùng số sân trong cùng branch.
   const payload = req.body || {};
   const branchId = String(payload.branchId || "").trim();
   const ordinalNumber = toOrdinalNumber(payload.ordinalNumber);
